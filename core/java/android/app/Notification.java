@@ -113,10 +113,7 @@ public class Notification implements Parcelable
      * {@link android.content.Intent#FLAG_ACTIVITY_NEW_TASK} flag, which requires
      * that you take care of task management as described in the
      * <a href="{@docRoot}guide/topics/fundamentals/tasks-and-back-stack.html">Tasks and Back
-     * Stack</a> document. In particular, make sure to read the notification section
-	 * <a href="{@docRoot}guide/topics/ui/notifiers/notifications.html#HandlingNotifications">Handling
-	 * Notifications</a> for the correct ways to launch an application from a
-	 * notification.
+     * Stack</a> document.
      */
     public PendingIntent contentIntent;
 
@@ -768,9 +765,7 @@ public class Notification implements Parcelable
          * Supply a {@link PendingIntent} to send when the notification is clicked.
          * If you do not supply an intent, you can now add PendingIntents to individual
          * views to be launched when clicked by calling {@link RemoteViews#setOnClickPendingIntent
-         * RemoteViews.setOnClickPendingIntent(int,PendingIntent)}.  Be sure to
-		 * read {@link Notification#contentIntent Notification.contentIntent} for
-		 * how to correctly use this.
+         * RemoteViews.setOnClickPendingIntent(int,PendingIntent)}.
          */
         public Builder setContentIntent(PendingIntent intent) {
             mContentIntent = intent;

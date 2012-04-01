@@ -19,7 +19,7 @@ package android.hardware;
 import java.util.GregorianCalendar;
 
 /**
- * Estimates magnetic field at a given point on
+ * This class is used to estimated estimate magnetic field at a given point on
  * Earth, and in particular, to compute the magnetic declination from true
  * north.
  *

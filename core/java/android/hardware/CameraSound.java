@@ -110,6 +110,7 @@ public class CameraSound {
 
     private static class CameraSoundPlayer implements Runnable {
         private int mSoundId;
+        private int mAudioStreamType;
         private MediaPlayer mPlayer;
         private Thread mThread;
         private boolean mExit;
@@ -146,7 +147,7 @@ public class CameraSound {
             }
             mPlayer = new MediaPlayer();
             try {
-                mPlayer.setAudioStreamType(AudioManager.STREAM_SYSTEM_ENFORCED);
+                mPlayer.setAudioStreamType(mAudioStreamType);
                 mPlayer.setDataSource(soundFilePath);
                 mPlayer.setLooping(false);
                 mPlayer.prepare();
@@ -178,6 +179,11 @@ public class CameraSound {
 
         public CameraSoundPlayer(int soundId) {
             mSoundId = soundId;
+            if (SystemProperties.get("ro.camera.sound.forced", "0").equals("0")) {
+                mAudioStreamType = AudioManager.STREAM_MUSIC;
+            } else {
+                mAudioStreamType = AudioManager.STREAM_SYSTEM_ENFORCED;
+            }
         }
 
         public void play() {

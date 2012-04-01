@@ -168,7 +168,7 @@ int main(int argc, char** argv)
             SkDynamicMemoryWStream stream;
             SkImageEncoder::EncodeStream(&stream, b,
                     SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
-           write(fd, stream.getStream(), stream.getOffset());
+            write(fd, stream.getStream(), stream.getOffset());
         } else {
             write(fd, &w, 4);
             write(fd, &h, 4);

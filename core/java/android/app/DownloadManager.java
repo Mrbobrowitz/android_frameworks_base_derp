@@ -341,7 +341,13 @@ public class DownloadManager {
          */
         public static final int NETWORK_WIFI = 1 << 1;
 
-		private Uri mUri;
+        /**
+         * Bit flag for {@link #setAllowedNetworkTypes} corresponding to
+         * {@link ConnectivityManager#TYPE_WIMAX}.
+         */
+        public static final int NETWORK_WIMAX = 1 << 6;
+
+        private Uri mUri;
         private Uri mDestinationUri;
         private List<Pair<String, String>> mRequestHeaders = new ArrayList<Pair<String, String>>();
         private CharSequence mTitle;

@@ -31,13 +31,8 @@ import android.os.Bundle;
  * <p>Extend this class and override one or more of the {@link #onUpdate}, {@link #onDeleted},
  * {@link #onEnabled} or {@link #onDisabled} methods to implement your own AppWidget functionality.
  * </p>
- *
- * <div class="special reference">
- * <h3>Developer Guides</h3>
- * <p>For more information about how to write an app widget provider, read the
- * <a href="{@docRoot}guide/topics/appwidgets/index.html#AppWidgetProvider">App Widgets</a>
- * developer guide.</p>
- * </div>
+ * <p>For an example of how to write a AppWidget provider, see the
+ * <a href="{@docRoot}guide/topics/appwidgets/index.html#Providers">AppWidgets</a> documentation.</p>
  */
 public class AppWidgetProvider extends BroadcastReceiver {
     /**

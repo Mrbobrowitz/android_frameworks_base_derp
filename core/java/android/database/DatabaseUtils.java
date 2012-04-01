@@ -39,7 +39,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.text.Collator;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -1319,7 +1318,7 @@ public class DatabaseUtils {
         if (sql.length() < 3) {
             return STATEMENT_OTHER;
         }
-        String prefixSql = sql.substring(0, 3).toUpperCase(Locale.US);
+        String prefixSql = sql.substring(0, 3).toUpperCase();
         if (prefixSql.equals("SEL")) {
             return STATEMENT_SELECT;
         } else if (prefixSql.equals("INS") ||

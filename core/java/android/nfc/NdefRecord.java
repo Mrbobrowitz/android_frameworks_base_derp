@@ -364,7 +364,7 @@ public final class NdefRecord implements Parcelable {
      * Ice Cream Sandwich.
      * <p>
      * If none of the applications are installed on the device,
-     * a Google Play link will be opened to the first application.
+     * a Market link will be opened to the first application.
      * <p>
      * Note that Android application records do not overrule
      * applications that have called

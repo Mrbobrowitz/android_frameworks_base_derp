@@ -43,14 +43,14 @@ import java.util.Map;
  * Test that downloads files from a test server and reports the bandwidth metrics collected.
  */
 public class BandwidthTest extends InstrumentationTestCase {
-	
+
     private static final String LOG_TAG = "BandwidthTest";
     private final static String PROF_LABEL = "PROF_";
     private final static String PROC_LABEL = "PROC_";
     private final static int INSTRUMENTATION_IN_PROGRESS = 2;
-	
+
     private final static String BASE_DIR =
-	Environment.getExternalStorageDirectory().getAbsolutePath();
+            Environment.getExternalStorageDirectory().getAbsolutePath();
     private final static String TMP_FILENAME = "tmp.dat";
     // Download 10.486 * 106 bytes (+ headers) from app engine test server.
     private final int FILE_SIZE = 10485613;
@@ -62,8 +62,8 @@ public class BandwidthTest extends InstrumentationTestCase {
     private String mTestServer;
     private String mDeviceId;
     private BandwidthTestRunner mRunner;
-	
-	
+
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -78,23 +78,22 @@ public class BandwidthTest extends InstrumentationTestCase {
         mTManager = (TelephonyManager)mContext.getSystemService(Context.TELEPHONY_SERVICE);
         mDeviceId = mTManager.getDeviceId();
     }
-	
+
     @Override
     protected void tearDown() throws Exception {
         mConnectionUtil.cleanUp();
         super.tearDown();
     }
-	
+
     /**
      * Ensure that downloading on wifi reports reasonable stats.
      */
     @LargeTest
     public void testWifiDownload() throws Exception {
-        mConnectionUtil.wifiTestInit();
         assertTrue("Could not connect to wifi!", setDeviceWifiAndAirplaneMode(mSsid));
         downloadFile();
     }
-	
+
     /**
      * Ensure that downloading on mobile reports reasonable stats.
      */
@@ -105,7 +104,7 @@ public class BandwidthTest extends InstrumentationTestCase {
         assertTrue("Do not have mobile data!", hasMobileData());
         downloadFile();
     }
-	
+
     /**
      * Helper method that downloads a file using http connection from a test server and reports the
      * data usage stats to instrumentation out.
@@ -113,18 +112,18 @@ public class BandwidthTest extends InstrumentationTestCase {
     protected void downloadFile() throws Exception {
         NetworkStats pre_test_stats = fetchDataFromProc(mUid);
         String ts = Long.toString(System.currentTimeMillis());
-		
+
         String targetUrl = BandwidthTestUtil.buildDownloadUrl(
-															  mTestServer, FILE_SIZE, mDeviceId, ts);
+                mTestServer, FILE_SIZE, mDeviceId, ts);
         TrafficStats.startDataProfiling(mContext);
         File tmpSaveFile = new File(BASE_DIR + File.separator + TMP_FILENAME);
         assertTrue(BandwidthTestUtil.DownloadFromUrl(targetUrl, tmpSaveFile));
         NetworkStats prof_stats = TrafficStats.stopDataProfiling(mContext);
         Log.d(LOG_TAG, prof_stats.toString());
-		
+
         NetworkStats post_test_stats = fetchDataFromProc(mUid);
         NetworkStats proc_stats = post_test_stats.subtract(pre_test_stats);
-		
+
         // Output measurements to instrumentation out, so that it can be compared to that of
         // the server.
         Bundle results = new Bundle();
@@ -134,21 +133,20 @@ public class BandwidthTest extends InstrumentationTestCase {
         AddStatsToResults(PROF_LABEL, prof_stats, results);
         AddStatsToResults(PROC_LABEL, proc_stats, results);
         getInstrumentation().sendStatus(INSTRUMENTATION_IN_PROGRESS, results);
-		
+
         // Clean up.
         assertTrue(cleanUpFile(tmpSaveFile));
     }
-	
+
     /**
      * Ensure that uploading on wifi reports reasonable stats.
      */
     @LargeTest
     public void testWifiUpload() throws Exception {
-        mConnectionUtil.wifiTestInit();
         assertTrue(setDeviceWifiAndAirplaneMode(mSsid));
         uploadFile();
     }
-	
+
     /**
      *  Ensure that uploading on wifi reports reasonable stats.
      */
@@ -157,7 +155,7 @@ public class BandwidthTest extends InstrumentationTestCase {
         assertTrue(hasMobileData());
         uploadFile();
     }
-	
+
     /**
      * Helper method that downloads a test file to upload. The stats reported to instrumentation out
      * only include upload stats.
@@ -166,10 +164,10 @@ public class BandwidthTest extends InstrumentationTestCase {
         // Download a file from the server.
         String ts = Long.toString(System.currentTimeMillis());
         String targetUrl = BandwidthTestUtil.buildDownloadUrl(
-															  mTestServer, FILE_SIZE, mDeviceId, ts);
+                mTestServer, FILE_SIZE, mDeviceId, ts);
         File tmpSaveFile = new File(BASE_DIR + File.separator + TMP_FILENAME);
         assertTrue(BandwidthTestUtil.DownloadFromUrl(targetUrl, tmpSaveFile));
-		
+
         ts = Long.toString(System.currentTimeMillis());
         NetworkStats pre_test_stats = fetchDataFromProc(mUid);
         TrafficStats.startDataProfiling(mContext);
@@ -178,7 +176,7 @@ public class BandwidthTest extends InstrumentationTestCase {
         Log.d(LOG_TAG, prof_stats.toString());
         NetworkStats post_test_stats = fetchDataFromProc(mUid);
         NetworkStats proc_stats = post_test_stats.subtract(pre_test_stats);
-		
+
         // Output measurements to instrumentation out, so that it can be compared to that of
         // the server.
         Bundle results = new Bundle();
@@ -188,22 +186,21 @@ public class BandwidthTest extends InstrumentationTestCase {
         AddStatsToResults(PROF_LABEL, prof_stats, results);
         AddStatsToResults(PROC_LABEL, proc_stats, results);
         getInstrumentation().sendStatus(INSTRUMENTATION_IN_PROGRESS, results);
-		
+
         // Clean up.
         assertTrue(cleanUpFile(tmpSaveFile));
     }
-	
+
     /**
      * We want to make sure that if we use wifi and the  Download Manager to download stuff,
      * accounting still goes to the app making the call and that the numbers still make sense.
      */
     @LargeTest
     public void testWifiDownloadWithDownloadManager() throws Exception {
-        mConnectionUtil.wifiTestInit();
         assertTrue(setDeviceWifiAndAirplaneMode(mSsid));
         downloadFileUsingDownloadManager();
     }
-	
+
     /**
      * We want to make sure that if we use mobile data and the Download Manager to download stuff,
      * accounting still goes to the app making the call and that the numbers still make sense.
@@ -213,7 +210,7 @@ public class BandwidthTest extends InstrumentationTestCase {
         assertTrue(hasMobileData());
         downloadFileUsingDownloadManager();
     }
-	
+
     /**
      * Helper method that downloads a file from a test server using the download manager and reports
      * the stats to instrumentation out.
@@ -228,7 +225,7 @@ public class BandwidthTest extends InstrumentationTestCase {
         TrafficStats.startDataProfiling(mContext);
         String ts = Long.toString(System.currentTimeMillis());
         String targetUrl = BandwidthTestUtil.buildDownloadUrl(
-															  mTestServer, FILE_SIZE, mDeviceId, ts);
+                mTestServer, FILE_SIZE, mDeviceId, ts);
         Log.v(LOG_TAG, "Download url: " + targetUrl);
         File tmpSaveFile = new File(BASE_DIR + File.separator + TMP_FILENAME);
         assertTrue(mConnectionUtil.startDownloadAndWait(targetUrl, 500000));
@@ -245,11 +242,11 @@ public class BandwidthTest extends InstrumentationTestCase {
         AddStatsToResults(PROF_LABEL, prof_stats, results);
         AddStatsToResults(PROC_LABEL, proc_stats, results);
         getInstrumentation().sendStatus(INSTRUMENTATION_IN_PROGRESS, results);
-		
+
         // Clean up.
         assertTrue(cleanUpFile(tmpSaveFile));
     }
-	
+
     /**
      * Fetch network data from /proc/uid_stat/uid
      *
@@ -263,10 +260,10 @@ public class BandwidthTest extends InstrumentationTestCase {
         int tx = BandwidthTestUtil.parseIntValueFromFile(snd_stat);
         NetworkStats stats = new NetworkStats(SystemClock.elapsedRealtime(), 1);
         stats.addValues(NetworkStats.IFACE_ALL, uid, NetworkStats.SET_DEFAULT,
-						NetworkStats.TAG_NONE, rx, 0, tx, 0, 0);
+                NetworkStats.TAG_NONE, rx, 0, tx, 0, 0);
         return stats;
     }
-	
+
     /**
      * Turn on Airplane mode and connect to the wifi.
      *
@@ -277,25 +274,23 @@ public class BandwidthTest extends InstrumentationTestCase {
         mConnectionUtil.setAirplaneMode(mContext, true);
         assertTrue(mConnectionUtil.connectToWifi(ssid));
         assertTrue(mConnectionUtil.waitForWifiState(WifiManager.WIFI_STATE_ENABLED,
-													ConnectionUtil.LONG_TIMEOUT));
+                ConnectionUtil.LONG_TIMEOUT));
         assertTrue(mConnectionUtil.waitForNetworkState(ConnectivityManager.TYPE_WIFI,
-													   State.CONNECTED, ConnectionUtil.LONG_TIMEOUT));
+                State.CONNECTED, ConnectionUtil.LONG_TIMEOUT));
         return mConnectionUtil.hasData();
     }
-	
+
     /**
      * Helper method to make sure we are connected to mobile data.
      *
      * @return true if we successfully connect to mobile data.
      */
     public boolean hasMobileData() {
-        assertTrue(mConnectionUtil.waitForNetworkState(ConnectivityManager.TYPE_MOBILE,
-													   State.CONNECTED, ConnectionUtil.LONG_TIMEOUT));
         assertTrue("Not connected to mobile", mConnectionUtil.isConnectedToMobile());
         assertFalse("Still connected to wifi.", mConnectionUtil.isConnectedToWifi());
         return mConnectionUtil.hasData();
     }
-	
+
     /**
      * Output the {@link NetworkStats} to Instrumentation out.
      *
@@ -343,7 +338,7 @@ public class BandwidthTest extends InstrumentationTestCase {
             results.putLong(label + "rx", entry.rxBytes);
         }
     }
-	
+
     /**
      * Remove file if it exists.
      * @param file {@link File} to delete.

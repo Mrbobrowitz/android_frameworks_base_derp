@@ -49,12 +49,6 @@ package android.hardware;
  * Android 2D APIs where the origin is in the top-left corner.
  * </p>
  *
- * <div class="special reference">
- * <h3>Developer Guides</h3>
- * <p>For more information about communicating with USB hardware, read the
- * <a href="{@docRoot}guide/topics/usb/index.html">USB</a> developer guide.</p>
- * </div>
- *
  * @see SensorManager
  * @see SensorEvent
  * @see Sensor

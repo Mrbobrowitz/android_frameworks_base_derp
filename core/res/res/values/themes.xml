@@ -29,16 +29,15 @@ please see themes_device_defaults.xml.
 ===============================================================
  -->
 <resources>
-    <!-- The default theme for apps on API level 10 and lower. This is the theme used for
-         activities that have not explicitly set their own theme.
+    <!-- The default system theme. This is the theme used for activities
+         that have not explicitly set their own theme.
+         
          <p>You can count on this being a dark
          background with light text on top, but should try to make no
          other assumptions about its appearance. In particular, the text
          inside of widgets using this theme may be completely different,
          with the widget container being a light color and the text on top
          of it a dark color.
-         <p>If you're developing for API level 11 and higher, you should instead use {@link
-         #Theme_Holo} or {@link #Theme_DeviceDefault}.</p>
     -->
     <style name="Theme">
 
@@ -371,12 +370,13 @@ please see themes_device_defaults.xml.
         <item name="pointerStyle">@android:style/Pointer</item>
     </style>
 
-    <!-- Variant of {@link #Theme} with no title bar -->
+    <!-- Variant of the default (dark) theme with no title bar -->
     <style name="Theme.NoTitleBar">
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <!-- Variant of {@link #Theme} that has no title bar and no status bar -->
+    <!-- Variant of the default (dark) theme that has no title bar and
+         fills the entire screen -->
     <style name="Theme.NoTitleBar.Fullscreen">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
@@ -385,8 +385,7 @@ please see themes_device_defaults.xml.
     <!-- Theme for a light background with dark text on top.  Set your activity
          to this theme if you would like such an appearance.  As with the
          default theme, you should try to assume little more than that the
-         background will be a light color.
-         <p>This is designed for API level 10 and lower.</p>-->
+         background will be a light color. -->
     <style name="Theme.Light">
         <item name="windowBackground">@android:drawable/screen_background_selector_light</item>
         <item name="colorBackground">@android:color/background_light</item>
@@ -458,19 +457,19 @@ please see themes_device_defaults.xml.
         <item name="detailsElementBackground">@android:drawable/panel_bg_holo_light</item>
     </style>
 
-    <!-- Variant of {@link #Theme_Light} with no title bar -->
+    <!-- Variant of the light theme with no title bar -->
     <style name="Theme.Light.NoTitleBar">
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <!-- Variant of {@link #Theme_Light} that has no title bar and
-         no status bar -->
+    <!-- Variant of the light theme that has no title bar and
+         fills the entire screen -->
     <style name="Theme.Light.NoTitleBar.Fullscreen">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
     
-    <!-- Variant on {@link #Theme} that ensures the background is
+    <!-- Special variation on the default theme that ensures the background is
          completely black.  This is useful for things like image viewers and
          media players.   If you want the normal (dark background) theme
          do <em>not</em> use this, use {@link #Theme}. -->
@@ -479,33 +478,33 @@ please see themes_device_defaults.xml.
         <item name="android:colorBackground">@android:color/black</item>
     </style>
     
-    <!-- Variant of {@link #Theme_Black} with no title bar -->
+    <!-- Variant of the black theme with no title bar -->
     <style name="Theme.Black.NoTitleBar">
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <!-- Variant of {@link #Theme_Black} that has no title bar and
-        no status bar -->
+    <!-- Variant of the black theme that has no title bar and
+         fills the entire screen -->
     <style name="Theme.Black.NoTitleBar.Fullscreen">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
     
-    <!-- Theme for windows that want to have the user's selected
-        wallpaper appear behind them.  -->
+    <!-- Default theme for windows that want to have the user's selected
+         wallpaper appear behind them.  -->
     <style name="Theme.Wallpaper">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:windowShowWallpaper">true</item>
     </style>
 
-    <!-- Variant of {@link #Theme_Wallpaper with no title bar -->
+    <!-- Variant of the translucent theme with no title bar -->
     <style name="Theme.Wallpaper.NoTitleBar">
         <item name="android:windowNoTitle">true</item>
     </style>
 
-   <!-- Variant of {@link #Theme_Wallpaper} that
-         has no title bar or status bar. -->
+    <!-- Variant of the translucent theme that has no title bar and
+         fills the entire screen -->
     <style name="Theme.Wallpaper.NoTitleBar.Fullscreen">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
@@ -952,13 +951,16 @@ please see themes_device_defaults.xml.
         <item name="listDividerAlertDialog">@android:drawable/list_divider_holo_dark</item>
 
         <item name="expandableListPreferredItemPaddingLeft">40dip</item>
-        <item name="expandableListPreferredChildPaddingLeft">?android:attr/expandableListPreferredItemPaddingLeft</item>
+        <item name="expandableListPreferredChildPaddingLeft">
+                ?android:attr/expandableListPreferredItemPaddingLeft</item>
 
         <item name="expandableListPreferredItemIndicatorLeft">3dip</item>
         <item name="expandableListPreferredItemIndicatorRight">0dip</item>
-        <item name="expandableListPreferredChildIndicatorLeft">?android:attr/expandableListPreferredItemIndicatorLeft</item>
-        <item name="expandableListPreferredChildIndicatorRight">?android:attr/expandableListPreferredItemIndicatorRight</item>
-        
+        <item name="expandableListPreferredChildIndicatorLeft">
+                ?android:attr/expandableListPreferredItemIndicatorLeft</item>
+        <item name="expandableListPreferredChildIndicatorRight">
+                ?android:attr/expandableListPreferredItemIndicatorRight</item>
+
         <!-- Gallery attributes -->
         <item name="galleryItemBackground">@android:drawable/gallery_item_background</item>
         
@@ -1255,12 +1257,15 @@ please see themes_device_defaults.xml.
         <item name="activatedBackgroundIndicator">@android:drawable/activated_background_holo_light</item>
 
         <item name="expandableListPreferredItemPaddingLeft">40dip</item>
-        <item name="expandableListPreferredChildPaddingLeft">?android:attr/expandableListPreferredItemPaddingLeft</item>
+        <item name="expandableListPreferredChildPaddingLeft">
+                ?android:attr/expandableListPreferredItemPaddingLeft</item>
 
         <item name="expandableListPreferredItemIndicatorLeft">3dip</item>
         <item name="expandableListPreferredItemIndicatorRight">0dip</item>
-        <item name="expandableListPreferredChildIndicatorLeft">?android:attr/expandableListPreferredItemIndicatorLeft</item>
-        <item name="expandableListPreferredChildIndicatorRight">?android:attr/expandableListPreferredItemIndicatorRight</item>
+        <item name="expandableListPreferredChildIndicatorLeft">
+                ?android:attr/expandableListPreferredItemIndicatorLeft</item>
+        <item name="expandableListPreferredChildIndicatorRight">
+                ?android:attr/expandableListPreferredItemIndicatorRight</item>
 
         <item name="listDividerAlertDialog">@android:drawable/list_divider_holo_light</item>
 
@@ -1517,7 +1522,6 @@ please see themes_device_defaults.xml.
     </style>
  
     <!-- Dialog themes for Holo -->
-    <eat-comment />
 
     <!-- Holo theme for dialog windows and activities, which is used by the
          {@link android.app.Dialog} class.  This changes the window to be

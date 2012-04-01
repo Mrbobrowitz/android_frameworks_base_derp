@@ -26,7 +26,6 @@ import android.database.DataSetObserver;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -733,36 +732,25 @@ public class Spinner extends AbsSpinner implements OnClickListener {
 
         @Override
         public void show() {
-			final Drawable background = getBackground();
-			int bgOffset = 0;
-			if (background != null) {
-				background.getPadding(mTempRect);
-				bgOffset = -mTempRect.left;
-			} else {
-				mTempRect.left = mTempRect.right = 0;
-			}
-			
             final int spinnerPaddingLeft = Spinner.this.getPaddingLeft();
             if (mDropDownWidth == WRAP_CONTENT) {
                 final int spinnerWidth = Spinner.this.getWidth();
                 final int spinnerPaddingRight = Spinner.this.getPaddingRight();
-				
-				int contentWidth =  measureContentWidth(
-						(SpinnerAdapter) mAdapter, getBackground());
-				final int contentWidthLimit = mContext.getResources()
-						.getDisplayMetrics().widthPixels - mTempRect.left - mTempRect.right;
-				if (contentWidth > contentWidthLimit) {
-					contentWidth = contentWidthLimit;
-				}
-				
                 setContentWidth(Math.max(
-                        contentWidth, spinnerWidth - spinnerPaddingLeft - spinnerPaddingRight));
+                        measureContentWidth((SpinnerAdapter) mAdapter, getBackground()),
+                        spinnerWidth - spinnerPaddingLeft - spinnerPaddingRight));
             } else if (mDropDownWidth == MATCH_PARENT) {
                 final int spinnerWidth = Spinner.this.getWidth();
                 final int spinnerPaddingRight = Spinner.this.getPaddingRight();
                 setContentWidth(spinnerWidth - spinnerPaddingLeft - spinnerPaddingRight);
             } else {
                 setContentWidth(mDropDownWidth);
+            }
+            final Drawable background = getBackground();
+            int bgOffset = 0;
+            if (background != null) {
+                background.getPadding(mTempRect);
+                bgOffset = -mTempRect.left;
             }
             setHorizontalOffset(bgOffset + spinnerPaddingLeft);
             setInputMethodMode(ListPopupWindow.INPUT_METHOD_NOT_NEEDED);

@@ -17,8 +17,6 @@
 package com.android.internal.app;
 
 import com.android.internal.R;
-import com.android.internal.content.PackageMonitor;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -60,11 +58,6 @@ public class ResolverActivity extends AlertActivity implements
     private TextView mClearDefaultHint;
     private PackageManager mPm;
 
-	private final PackageMonitor mPackageMonitor = new PackageMonitor() {
-			@Override public void onSomePackagesChanged() {
-			mAdapter.handlePackagesChanged();
-		}
-	};
     private Intent makeMyIntent() {
         Intent intent = new Intent(getIntent());
         // The resolver activity is set to be hidden from recent tasks.
@@ -95,8 +88,6 @@ public class ResolverActivity extends AlertActivity implements
         ap.mTitle = title;
         ap.mOnClickListener = this;
 
-		mPackageMonitor.register(this, false);
-
         if (alwaysUseOption) {
             LayoutInflater inflater = (LayoutInflater) getSystemService(
                     Context.LAYOUT_INFLATER_SERVICE);
@@ -122,20 +113,6 @@ public class ResolverActivity extends AlertActivity implements
 
         setupAlert();
     }
-
-	@Override
-		protected void onRestart() {
-			super.onRestart();
-			mPackageMonitor.register(this, false);
-			mAdapter.handlePackagesChanged();
-		}
-
-	@Override
-		protected void onStop() {
-			super.onStop();
-			mPackageMonitor.unregister();
-		}
-
 
     public void onClick(DialogInterface dialog, int which) {
         ResolveInfo ri = mAdapter.resolveInfoForPosition(which);
@@ -248,47 +225,29 @@ public class ResolverActivity extends AlertActivity implements
     }
 
     private final class ResolveListAdapter extends BaseAdapter {
-		private final Intent[] mInitialIntents;
-		private final List<ResolveInfo> mBaseResolveList;
         private final Intent mIntent;
         private final LayoutInflater mInflater;
 
-		private List<ResolveInfo> mCurrentResolveList;
         private List<DisplayResolveInfo> mList;
 
         public ResolveListAdapter(Context context, Intent intent,
                 Intent[] initialIntents, List<ResolveInfo> rList) {
             mIntent = new Intent(intent);
             mIntent.setComponent(null);
-			mInitialIntents = initialIntents;
-			mBaseResolveList = rList;
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			rebuildList();
-		}
-		public void handlePackagesChanged() {
-            rebuildList();
-            notifyDataSetChanged();
-            if (mList.size() <= 0) {
-                // We no longer have any items...  just finish the activity.
-                finish();
-            }
-        }
-		
-        private void rebuildList() {
-            if (mBaseResolveList != null) {
-                mCurrentResolveList = mBaseResolveList;
-            } else {
-                mCurrentResolveList = mPm.queryIntentActivities(
-						mIntent, PackageManager.MATCH_DEFAULT_ONLY
+
+            if (rList == null) {
+                rList = mPm.queryIntentActivities(
+                        intent, PackageManager.MATCH_DEFAULT_ONLY
                         | (mAlwaysCheck != null ? PackageManager.GET_RESOLVED_FILTER : 0));
             }
             int N;
-            if ((mCurrentResolveList != null) && ((N = mCurrentResolveList != null) && ((N = rList.size()) > 0)) {
+            if ((rList != null) && ((N = rList.size()) > 0)) {
                 // Only display the first matches that are either of equal
                 // priority or have asked to be default options.
-                ResolveInfo r0 = mCurrentResolveList.get(0);
+                ResolveInfo r0 = rList.get(0);
                 for (int i=1; i<N; i++) {
-                    ResolveInfo ri = mCurrentResolveList.get(i);
+                    ResolveInfo ri = rList.get(i);
                     if (false) Log.v(
                         "ResolveListActivity",
                         r0.activityInfo.name + "=" +
@@ -298,7 +257,7 @@ public class ResolverActivity extends AlertActivity implements
                    if (r0.priority != ri.priority ||
                         r0.isDefault != ri.isDefault) {
                         while (i < N) {
-                            mCurrentResolveList.remove(i);
+                            rList.remove(i);
                             N--;
                         }
                     }
@@ -306,15 +265,15 @@ public class ResolverActivity extends AlertActivity implements
                 if (N > 1) {
                     ResolveInfo.DisplayNameComparator rComparator =
                             new ResolveInfo.DisplayNameComparator(mPm);
-                    Collections.sort(mCurrentResolveList, rComparator);
+                    Collections.sort(rList, rComparator);
                 }
                 
                 mList = new ArrayList<DisplayResolveInfo>();
                 
                 // First put the initial items at the top.
-                if (mInitialIntents != null) {
-                    for (int i=0; i<mInitialIntents.length; i++) {
-                        Intent ii = mInitialIntents[i];
+                if (initialIntents != null) {
+                    for (int i=0; i<initialIntents.length; i++) {
+                        Intent ii = initialIntents[i];
                         if (ii == null) {
                             continue;
                         }
@@ -341,14 +300,14 @@ public class ResolverActivity extends AlertActivity implements
                 
                 // Check for applications with same name and use application name or
                 // package name if necessary
-                r0 = mCurrentResolveList.get(0);
+                r0 = rList.get(0);
                 int start = 0;
                 CharSequence r0Label =  r0.loadLabel(mPm);
                 for (int i = 1; i < N; i++) {
                     if (r0Label == null) {
                         r0Label = r0.activityInfo.packageName;
                     }
-                    ResolveInfo ri = mCurrentResolveList.get(i);
+                    ResolveInfo ri = rList.get(i);
                     CharSequence riLabel = ri.loadLabel(mPm);
                     if (riLabel == null) {
                         riLabel = ri.activityInfo.packageName;
@@ -356,13 +315,13 @@ public class ResolverActivity extends AlertActivity implements
                     if (riLabel.equals(r0Label)) {
                         continue;
                     }
-                    processGroup(mCurrentResolveList, start, (i-1), r0, r0Label);
+                    processGroup(rList, start, (i-1), r0, r0Label);
                     r0 = ri;
                     r0Label = riLabel;
                     start = i;
                 }
                 // Process last group
-                processGroup(mCurrentResolveList, start, (N-1), r0, r0Label);
+                processGroup(rList, start, (N-1), r0, r0Label);
             }
         }
 

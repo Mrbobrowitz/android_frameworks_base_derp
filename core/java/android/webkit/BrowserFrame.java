@@ -58,9 +58,9 @@ import java.util.Set;
 import org.apache.harmony.security.provider.cert.X509CertImpl;
 
 class BrowserFrame extends Handler {
-	
+
     private static final String LOGTAG = "webkit";
-	
+
     /**
      * Cap the number of LoadListeners that will be instantiated, so
      * we don't blow the GREF count.  Attempting to queue more than
@@ -68,7 +68,7 @@ class BrowserFrame extends Handler {
      * request's LoadListener
      */
     private final static int MAX_OUTSTANDING_REQUESTS = 300;
-	
+
     private final CallbackProxy mCallbackProxy;
     private final WebSettings mSettings;
     private final Context mContext;
@@ -83,20 +83,20 @@ class BrowserFrame extends Handler {
     // queue has been cleared,they are ignored.
     private boolean mBlockMessages = false;
     private int mOrientation = -1;
-	
+
     // Is this frame the main frame?
     private boolean mIsMainFrame;
-	
+
     // Attached Javascript interfaces
     private Map<String, Object> mJavaScriptObjects;
     private Set<Object> mRemovedJavaScriptObjects;
-	
+
     // Key store handler when Chromium HTTP stack is used.
     private KeyStoreHandler mKeyStoreHandler = null;
-	
+
     // Implementation of the searchbox API.
     private final SearchBoxImpl mSearchBox;
-	
+
     // message ids
     // a message posted when a frame loading is completed
     static final int FRAME_COMPLETED = 1001;
@@ -104,7 +104,7 @@ class BrowserFrame extends Handler {
     static final int ORIENTATION_CHANGED = 1002;
     // a message posted when the user decides the policy
     static final int POLICY_FUNCTION = 1003;
-	
+
     // Note: need to keep these in sync with FrameLoaderTypes.h in native
     static final int FRAME_LOADTYPE_STANDARD = 0;
     static final int FRAME_LOADTYPE_BACK = 1;
@@ -115,26 +115,26 @@ class BrowserFrame extends Handler {
     static final int FRAME_LOADTYPE_SAME = 6;
     static final int FRAME_LOADTYPE_REDIRECT = 7;
     static final int FRAME_LOADTYPE_REPLACE = 8;
-	
+
     // A progress threshold to switch from history Picture to live Picture
     private static final int TRANSITION_SWITCH_THRESHOLD = 75;
-	
+
     // This is a field accessed by native code as well as package classes.
     /*package*/ int mNativeFrame;
-	
+
     // Static instance of a JWebCoreJavaBridge to handle timer and cookie
     // requests from WebCore.
     static JWebCoreJavaBridge sJavaBridge;
-	
+
     private static class ConfigCallback implements ComponentCallbacks {
         private final ArrayList<WeakReference<Handler>> mHandlers =
-		new ArrayList<WeakReference<Handler>>();
+                new ArrayList<WeakReference<Handler>>();
         private final WindowManager mWindowManager;
-		
+
         ConfigCallback(WindowManager wm) {
             mWindowManager = wm;
         }
-		
+
         public synchronized void addHandler(Handler h) {
             // No need to ever remove a Handler. If the BrowserFrame is
             // destroyed, it will be collected and the WeakReference set to
@@ -142,13 +142,13 @@ class BrowserFrame extends Handler {
             // change, the message will be ignored.
             mHandlers.add(new WeakReference<Handler>(h));
         }
-		
+
         public void onConfigurationChanged(Configuration newConfig) {
             if (mHandlers.size() == 0) {
                 return;
             }
             int orientation =
-			mWindowManager.getDefaultDisplay().getOrientation();
+                    mWindowManager.getDefaultDisplay().getOrientation();
             switch (orientation) {
                 case Surface.ROTATION_90:
                     orientation = 90;
@@ -169,12 +169,12 @@ class BrowserFrame extends Handler {
                 // Create a list of handlers to remove. Go ahead and make it
                 // the same size to avoid resizing.
                 ArrayList<WeakReference> handlersToRemove =
-				new ArrayList<WeakReference>(mHandlers.size());
+                        new ArrayList<WeakReference>(mHandlers.size());
                 for (WeakReference<Handler> wh : mHandlers) {
                     Handler h = wh.get();
                     if (h != null) {
                         h.sendMessage(h.obtainMessage(ORIENTATION_CHANGED,
-													  orientation, 0));
+                                    orientation, 0));
                     } else {
                         handlersToRemove.add(wh);
                     }
@@ -185,11 +185,11 @@ class BrowserFrame extends Handler {
                 }
             }
         }
-		
+
         public void onLowMemory() {}
     }
     static ConfigCallback sConfigCallback;
-	
+
     /**
      * Create a new BrowserFrame to be used in an application.
      * @param context An application context to use when retrieving assets.
@@ -200,17 +200,17 @@ class BrowserFrame extends Handler {
      * XXX: Called by WebCore thread.
      */
     public BrowserFrame(Context context, WebViewCore w, CallbackProxy proxy,
-						WebSettings settings, Map<String, Object> javascriptInterfaces) {
-		
+            WebSettings settings, Map<String, Object> javascriptInterfaces) {
+
         Context appContext = context.getApplicationContext();
-		
+
         // Create a global JWebCoreJavaBridge to handle timers and
         // cookies in the WebCore thread.
         if (sJavaBridge == null) {
             sJavaBridge = new JWebCoreJavaBridge();
             // set WebCore native cache size
             ActivityManager am = (ActivityManager) context
-			.getSystemService(Context.ACTIVITY_SERVICE);
+                    .getSystemService(Context.ACTIVITY_SERVICE);
             if (am.getMemoryClass() > 16) {
                 sJavaBridge.setCacheSize(8 * 1024 * 1024);
             } else {
@@ -223,38 +223,38 @@ class BrowserFrame extends Handler {
             // create PluginManager with current Context
             PluginManager.getInstance(appContext);
         }
-		
+
         if (sConfigCallback == null) {
             sConfigCallback = new ConfigCallback(
-												 (WindowManager) appContext.getSystemService(
-																							 Context.WINDOW_SERVICE));
+                    (WindowManager) appContext.getSystemService(
+                            Context.WINDOW_SERVICE));
             ViewRootImpl.addConfigCallback(sConfigCallback);
         }
         sConfigCallback.addHandler(this);
-		
+
         mJavaScriptObjects = javascriptInterfaces;
         if (mJavaScriptObjects == null) {
             mJavaScriptObjects = new HashMap<String, Object>();
         }
         mRemovedJavaScriptObjects = new HashSet<Object>();
-		
+
         mSettings = settings;
         mContext = context;
         mCallbackProxy = proxy;
         mDatabase = WebViewDatabase.getInstance(appContext);
         mWebViewCore = w;
-		
+
         mSearchBox = new SearchBoxImpl(mWebViewCore, mCallbackProxy);
         mJavaScriptObjects.put(SearchBoxImpl.JS_INTERFACE_NAME, mSearchBox);
-		
+
         AssetManager am = context.getAssets();
         nativeCreateFrame(w, am, proxy.getBackForwardList());
-		
+
         if (DebugFlags.BROWSER_FRAME) {
             Log.v(LOGTAG, "BrowserFrame constructor: this=" + this);
         }
     }
-	
+
     /**
      * Load a url from the network or the filesystem into the main frame.
      * Following the same behaviour as Safari, javascript: URLs are not passed
@@ -269,13 +269,13 @@ class BrowserFrame extends Handler {
         if (URLUtil.isJavaScriptUrl(url)) {
             // strip off the scheme and evaluate the string
             stringByEvaluatingJavaScriptFromString(
-												   url.substring("javascript:".length()));
+                    url.substring("javascript:".length()));
         } else {
             nativeLoadUrl(url, extraHeaders);
         }
         mLoadInitFromJava = false;
     }
-	
+
     /**
      * Load a url with "POST" method from the network into the main frame.
      * @param url The url to load.
@@ -286,7 +286,7 @@ class BrowserFrame extends Handler {
         nativePostUrl(url, data);
         mLoadInitFromJava = false;
     }
-	
+
     /**
      * Load the content as if it was loaded by the provided base URL. The
      * historyUrl is used as the history entry for the load data.
@@ -298,7 +298,7 @@ class BrowserFrame extends Handler {
      * @param historyUrl URL to use as the history entry.
      */
     public void loadData(String baseUrl, String data, String mimeType,
-						 String encoding, String historyUrl) {
+            String encoding, String historyUrl) {
         mLoadInitFromJava = true;
         if (historyUrl == null || historyUrl.length() == 0) {
             historyUrl = "about:blank";
@@ -318,7 +318,7 @@ class BrowserFrame extends Handler {
         nativeLoadData(baseUrl, data, mimeType, encoding, historyUrl);
         mLoadInitFromJava = false;
     }
-	
+
     /**
      * Saves the contents of the frame as a web archive.
      *
@@ -330,7 +330,7 @@ class BrowserFrame extends Handler {
     /* package */ String saveWebArchive(String basename, boolean autoname) {
         return nativeSaveWebArchive(basename, autoname);
     }
-	
+
     /**
      * Go back or forward the number of steps given.
      * @param steps A negative or positive number indicating the direction
@@ -341,7 +341,7 @@ class BrowserFrame extends Handler {
         nativeGoBackOrForward(steps);
         mLoadInitFromJava = false;
     }
-	
+
     /**
      * native callback
      * Report an error to an activity.
@@ -362,24 +362,24 @@ class BrowserFrame extends Handler {
         }
         mCallbackProxy.onReceivedError(errorCode, description, failingUrl);
     }
-	
+
     private void resetLoadingStates() {
         mCommitted = true;
         mFirstLayoutDone = true;
     }
-	
+
     /* package */boolean committed() {
         return mCommitted;
     }
-	
+
     /* package */boolean firstLayoutDone() {
         return mFirstLayoutDone;
     }
-	
+
     /* package */int loadType() {
         return mLoadType;
     }
-	
+
     /* package */void didFirstLayout() {
         if (!mFirstLayoutDone) {
             mFirstLayoutDone = true;
@@ -388,19 +388,19 @@ class BrowserFrame extends Handler {
             mWebViewCore.contentDraw();
         }
     }
-	
+
     /**
      * native callback
      * Indicates the beginning of a new load.
      * This method will be called once for the main frame.
      */
     private void loadStarted(String url, Bitmap favicon, int loadType,
-							 boolean isMainFrame) {
+            boolean isMainFrame) {
         mIsMainFrame = isMainFrame;
-		
+
         if (isMainFrame || loadType == FRAME_LOADTYPE_STANDARD) {
             mLoadType = loadType;
-			
+
             if (isMainFrame) {
                 // Call onPageStarted for main frames.
                 mCallbackProxy.onPageStarted(url, favicon);
@@ -414,12 +414,12 @@ class BrowserFrame extends Handler {
             }
         }
     }
-	
+
     @SuppressWarnings("unused")
     private void saveFormData(HashMap<String, String> data) {
         if (mSettings.getSaveFormData()) {
             final WebHistoryItem h = mCallbackProxy.getBackForwardList()
-			.getCurrentItem();
+                    .getCurrentItem();
             if (h != null) {
                 String url = WebTextView.urlForAutoCompleteData(h.getUrl());
                 if (url != null) {
@@ -428,17 +428,17 @@ class BrowserFrame extends Handler {
             }
         }
     }
-	
+
     @SuppressWarnings("unused")
     private boolean shouldSaveFormData() {
         if (mSettings.getSaveFormData()) {
             final WebHistoryItem h = mCallbackProxy.getBackForwardList()
-			.getCurrentItem();
+                    .getCurrentItem();
             return h != null && h.getUrl() != null;
         }
         return false;
     }
-	
+
     /**
      * native callback
      * Indicates the WebKit has committed to the new load
@@ -450,7 +450,7 @@ class BrowserFrame extends Handler {
             mWebViewCore.getWebView().mViewManager.postResetStateAll();
         }
     }
-	
+
     /**
      * native callback
      * <p>
@@ -459,7 +459,7 @@ class BrowserFrame extends Handler {
      */
     private void loadFinished(String url, int loadType, boolean isMainFrame) {
         // mIsMainFrame and isMainFrame are better be equal!!!
-		
+
         if (isMainFrame || loadType == FRAME_LOADTYPE_STANDARD) {
             if (isMainFrame) {
                 resetLoadingStates();
@@ -468,7 +468,7 @@ class BrowserFrame extends Handler {
             }
         }
     }
-	
+
     /**
      * We have received an SSL certificate for the main top-level page.
      * Used by the Android HTTP stack only.
@@ -480,7 +480,7 @@ class BrowserFrame extends Handler {
             mCallbackProxy.onReceivedCertificate(certificate);
         }
     }
-	
+
     /**
      * Destroy all native components of the BrowserFrame.
      */
@@ -489,7 +489,7 @@ class BrowserFrame extends Handler {
         mBlockMessages = true;
         removeCallbacksAndMessages(null);
     }
-	
+
     /**
      * Handle messages posted to us.
      * @param msg The message to handle.
@@ -503,12 +503,12 @@ class BrowserFrame extends Handler {
             case FRAME_COMPLETED: {
                 if (mSettings.getSavePassword() && hasPasswordField()) {
                     WebHistoryItem item = mCallbackProxy.getBackForwardList()
-					.getCurrentItem();
+                            .getCurrentItem();
                     if (item != null) {
                         WebAddress uri = new WebAddress(item.getUrl());
                         String schemePlusHost = uri.getScheme() + uri.getHost();
                         String[] up =
-						mDatabase.getUsernamePassword(schemePlusHost);
+                                mDatabase.getUsernamePassword(schemePlusHost);
                         if (up != null && up[0] != null) {
                             setUsernamePassword(up[0], up[1]);
                         }
@@ -516,16 +516,16 @@ class BrowserFrame extends Handler {
                 }
                 if (!JniUtil.useChromiumHttpStack()) {
                     WebViewWorker.getHandler().sendEmptyMessage(
-																WebViewWorker.MSG_TRIM_CACHE);
+                            WebViewWorker.MSG_TRIM_CACHE);
                 }
                 break;
             }
-				
+
             case POLICY_FUNCTION: {
                 nativeCallPolicyFunction(msg.arg1, msg.arg2);
                 break;
             }
-				
+
             case ORIENTATION_CHANGED: {
                 if (mOrientation != msg.arg1) {
                     mOrientation = msg.arg1;
@@ -533,12 +533,12 @@ class BrowserFrame extends Handler {
                 }
                 break;
             }
-				
+
             default:
                 break;
         }
     }
-	
+
     /**
      * Punch-through for WebCore to set the document
      * title. Inform the Activity of the new title.
@@ -550,7 +550,7 @@ class BrowserFrame extends Handler {
         // sync with the document.
         mCallbackProxy.onReceivedTitle(title);
     }
-	
+
     /**
      * Retrieves the render tree of this frame and puts it as the object for
      * the message and sends the message.
@@ -560,12 +560,12 @@ class BrowserFrame extends Handler {
         callback.obj = externalRepresentation();;
         callback.sendToTarget();
     }
-	
+
     /**
      * Return the render tree as a string
      */
     private native String externalRepresentation();
-	
+
     /**
      * Retrieves the visual text of the frames, puts it as the object for
      * the message and sends the message.
@@ -584,17 +584,17 @@ class BrowserFrame extends Handler {
         callback.obj = text.toString();
         callback.sendToTarget();
     }
-	
+
     /**
      * Return the text drawn on the screen as a string
      */
     private native String documentAsText();
-	
+
     /**
      * Return the text drawn on the child frames as a string
      */
     private native String childFramesAsText();
-	
+
     /*
      * This method is called by WebCore to inform the frame that
      * the Javascript window object has been cleared.
@@ -607,14 +607,14 @@ class BrowserFrame extends Handler {
             Object object = mJavaScriptObjects.get(interfaceName);
             if (object != null) {
                 nativeAddJavascriptInterface(nativeFramePointer,
-											 mJavaScriptObjects.get(interfaceName), interfaceName);
+                        mJavaScriptObjects.get(interfaceName), interfaceName);
             }
         }
         mRemovedJavaScriptObjects.clear();
-		
+
         stringByEvaluatingJavaScriptFromString(SearchBoxImpl.JS_BRIDGE);
     }
-	
+
     /**
      * This method is called by WebCore to check whether application
      * wants to hijack url loading
@@ -631,14 +631,14 @@ class BrowserFrame extends Handler {
             return false;
         }
     }
-	
+
     public void addJavascriptInterface(Object obj, String interfaceName) {
         assert obj != null;
         removeJavascriptInterface(interfaceName);
-		
+
         mJavaScriptObjects.put(interfaceName, obj);
     }
-	
+
     public void removeJavascriptInterface(String interfaceName) {
         // We keep a reference to the removed object because the native side holds only a weak
         // reference and we need to allow the object to continue to be used until the page has been
@@ -647,7 +647,7 @@ class BrowserFrame extends Handler {
             mRemovedJavaScriptObjects.add(mJavaScriptObjects.remove(interfaceName));
         }
     }
-	
+
     /**
      * Called by JNI.  Given a URI, find the associated file and return its size
      * @param uri A String representing the URI of the desired file.
@@ -657,13 +657,13 @@ class BrowserFrame extends Handler {
         int size = 0;
         try {
             InputStream stream = mContext.getContentResolver()
-			.openInputStream(Uri.parse(uri));
+                            .openInputStream(Uri.parse(uri));
             size = stream.available();
             stream.close();
         } catch (Exception e) {}
         return size;
     }
-	
+
     /**
      * Called by JNI.  Given a URI, a buffer, and an offset into the buffer,
      * copy the resource into buffer.
@@ -674,14 +674,14 @@ class BrowserFrame extends Handler {
      * @return int The size of the given file, or zero if it fails.
      */
     private int getFile(String uri, byte[] buffer, int offset,
-						int expectedSize) {
+            int expectedSize) {
         int size = 0;
         try {
             InputStream stream = mContext.getContentResolver()
-			.openInputStream(Uri.parse(uri));
+                            .openInputStream(Uri.parse(uri));
             size = stream.available();
             if (size <= expectedSize && buffer != null
-				&& buffer.length - offset >= size) {
+                    && buffer.length - offset >= size) {
                 stream.read(buffer, offset, size);
             } else {
                 size = 0;
@@ -696,7 +696,7 @@ class BrowserFrame extends Handler {
         }
         return size;
     }
-	
+
     /**
      * Get the InputStream for an Android resource
      * There are three different kinds of android resources:
@@ -712,7 +712,7 @@ class BrowserFrame extends Handler {
         final String ANDROID_ASSET = "file:///android_asset/";
         final String ANDROID_RESOURCE = "file:///android_res/";
         final String ANDROID_CONTENT = "content:";
-		
+
         // file:///android_res
         if (url.startsWith(ANDROID_RESOURCE)) {
             url = url.replaceFirst(ANDROID_RESOURCE, "");
@@ -731,17 +731,17 @@ class BrowserFrame extends Handler {
             String errorMsg = null;
             try {
                 final Class<?> d = mContext.getApplicationContext()
-				.getClassLoader().loadClass(
-											mContext.getPackageName() + ".R$"
-											+ subClassName);
+                        .getClassLoader().loadClass(
+                                mContext.getPackageName() + ".R$"
+                                        + subClassName);
                 final java.lang.reflect.Field field = d.getField(fieldName);
                 final int id = field.getInt(null);
                 TypedValue value = new TypedValue();
                 mContext.getResources().getValue(id, value, true);
                 if (value.type == TypedValue.TYPE_STRING) {
                     return mContext.getAssets().openNonAsset(
-															 value.assetCookie, value.string.toString(),
-															 AssetManager.ACCESS_STREAMING);
+                            value.assetCookie, value.string.toString(),
+                            AssetManager.ACCESS_STREAMING);
                 } else {
                     // Old stack only supports TYPE_STRING for res files
                     Log.e(LOGTAG, "not of type string: " + url);
@@ -751,8 +751,8 @@ class BrowserFrame extends Handler {
                 Log.e(LOGTAG, "Exception: " + url);
                 return null;
             }
-			
-			// file:///android_asset
+
+        // file:///android_asset
         } else if (url.startsWith(ANDROID_ASSET)) {
             url = url.replaceFirst(ANDROID_ASSET, "");
             try {
@@ -761,8 +761,8 @@ class BrowserFrame extends Handler {
             } catch (IOException e) {
                 return null;
             }
-			
-			// content://
+
+        // content://
         } else if (mSettings.getAllowContentAccess() &&
                    url.startsWith(ANDROID_CONTENT)) {
             try {
@@ -784,7 +784,7 @@ class BrowserFrame extends Handler {
             return null;
         }
     }
-	
+
     /**
      * Start loading a resource.
      * @param loaderHandle The native ResourceLoader that is the target of the
@@ -816,7 +816,7 @@ class BrowserFrame extends Handler {
         if (mSettings.getCacheMode() != WebSettings.LOAD_DEFAULT) {
             cacheMode = mSettings.getCacheMode();
         }
-		
+
         if (method.equals("POST")) {
             // Don't use the cache on POSTs when issuing a normal POST
             // request.
@@ -830,50 +830,49 @@ class BrowserFrame extends Handler {
                 maybeSavePassword(postData, domUsername, domPassword);
             }
         }
-		
+
         // is this resource the main-frame top-level page?
         boolean isMainFramePage = mIsMainFrame;
-		
+
         if (DebugFlags.BROWSER_FRAME) {
             Log.v(LOGTAG, "startLoadingResource: url=" + url + ", method="
-				  + method + ", postData=" + postData + ", isMainFramePage="
-				  + isMainFramePage + ", mainResource=" + mainResource
-				  + ", userGesture=" + userGesture);
+                    + method + ", postData=" + postData + ", isMainFramePage="
+                    + isMainFramePage + ", mainResource=" + mainResource
+                    + ", userGesture=" + userGesture);
         }
-		
+
         // Create a LoadListener
         LoadListener loadListener = LoadListener.getLoadListener(mContext,
-																 this, url, loaderHandle, synchronous, isMainFramePage,
-																 mainResource, userGesture, postDataIdentifier, username, password);
-		
+                this, url, loaderHandle, synchronous, isMainFramePage,
+                mainResource, userGesture, postDataIdentifier, username, password);
+
         if (LoadListener.getNativeLoaderCount() > MAX_OUTSTANDING_REQUESTS) {
             // send an error message, so that loadListener can be deleted
             // after this is returned. This is important as LoadListener's 
             // nativeError will remove the request from its DocLoader's request
             // list. But the set up is not done until this method is returned.
             loadListener.error(
-							   android.net.http.EventHandler.ERROR, mContext.getString(
-																					   com.android.internal.R.string.httpErrorTooManyRequests));
+                    android.net.http.EventHandler.ERROR, mContext.getString(
+                            com.android.internal.R.string.httpErrorTooManyRequests));
             return loadListener;
         }
-		
+
         // Note that we are intentionally skipping
         // inputStreamForAndroidResource.  This is so that FrameLoader will use
         // the various StreamLoader classes to handle assets.
         FrameLoader loader = new FrameLoader(loadListener, mSettings, method,
-											 mCallbackProxy.shouldInterceptRequest(url));
+                mCallbackProxy.shouldInterceptRequest(url));
         loader.setHeaders(headers);
         loader.setPostData(postData);
         // Set the load mode to the mode used for the current page.
         // If WebKit wants validation, go to network directly.
         loader.setCacheMode(headers.containsKey("If-Modified-Since")
-							|| headers.containsKey("If-None-Match") ? 
-							WebSettings.LOAD_NO_CACHE : cacheMode);
-        loader.executeLoad();
+                || headers.containsKey("If-None-Match") ? 
+                        WebSettings.LOAD_NO_CACHE : cacheMode);
         // Set referrer to current URL?
         return !synchronous ? loadListener : null;
     }
-	
+
     /**
      * If this looks like a POST request (form submission) containing a username
      * and password, give the user the option of saving them. Will either do
@@ -887,33 +886,33 @@ class BrowserFrame extends Handler {
      * @param password The password entered by the user (sniffed from the DOM).
      */
     private void maybeSavePassword(
-								   byte[] postData, String username, String password) {
+            byte[] postData, String username, String password) {
         if (postData == null
-			|| username == null || username.isEmpty()
-			|| password == null || password.isEmpty()) {
+                || username == null || username.isEmpty()
+                || password == null || password.isEmpty()) {
             return; // No password to save.
         }
-		
+
         if (!mSettings.getSavePassword()) {
             return; // User doesn't want to save passwords.
         }
-		
+
         try {
             if (DebugFlags.BROWSER_FRAME) {
                 Assert.assertNotNull(mCallbackProxy.getBackForwardList()
-									 .getCurrentItem());
+                        .getCurrentItem());
             }
             WebAddress uri = new WebAddress(mCallbackProxy
-											.getBackForwardList().getCurrentItem().getUrl());
+                    .getBackForwardList().getCurrentItem().getUrl());
             String schemePlusHost = uri.getScheme() + uri.getHost();
             // Check to see if the username & password appear in
             // the post data (there could be another form on the
             // page and that was posted instead.
             String postString = new String(postData);
             if (postString.contains(URLEncoder.encode(username)) &&
-				postString.contains(URLEncoder.encode(password))) {
+                    postString.contains(URLEncoder.encode(password))) {
                 String[] saved = mDatabase.getUsernamePassword(
-															   schemePlusHost);
+                        schemePlusHost);
                 if (saved != null) {
                     // null username implies that user has chosen not to
                     // save password
@@ -922,39 +921,32 @@ class BrowserFrame extends Handler {
                         // chosen to save password, so update the
                         // recorded password
                         mDatabase.setUsernamePassword(
-													  schemePlusHost, username, password);
+                                schemePlusHost, username, password);
                     }
                 } else {
                     // CallbackProxy will handle creating the resume
                     // message
                     mCallbackProxy.onSavePassword(schemePlusHost, username,
-												  password, null);
+                            password, null);
                 }
             }
         } catch (ParseException ex) {
             // if it is bad uri, don't save its password
         }
     }
-	
+
     // Called by jni from the chrome network stack.
     private WebResourceResponse shouldInterceptRequest(String url) {
         InputStream androidResource = inputStreamForAndroidResource(url);
         if (androidResource != null) {
             return new WebResourceResponse(null, null, androidResource);
         }
-		
-        // Note that we check this after looking for an android_asset or
-        // android_res URL, as we allow those even if file access is disabled.
-        if (!mSettings.getAllowFileAccess() && url.startsWith("file://")) {
-            return new WebResourceResponse(null, null, null);
-        }
-		
         WebResourceResponse response = mCallbackProxy.shouldInterceptRequest(url);
         if (response == null && "browser:incognito".equals(url)) {
             try {
                 Resources res = mContext.getResources();
                 InputStream ins = res.openRawResource(
-													  com.android.internal.R.raw.incognito_mode_start_page);
+                        com.android.internal.R.raw.incognito_mode_start_page);
                 response = new WebResourceResponse("text/html", "utf8", ins);
             } catch (NotFoundException ex) {
                 // This shouldn't happen, but try and gracefully handle it jic
@@ -963,7 +955,7 @@ class BrowserFrame extends Handler {
         }
         return response;
     }
-	
+
     /**
      * Set the progress for the browser activity.  Called by native code.
      * Uses a delay so it does not happen too often.
@@ -982,7 +974,7 @@ class BrowserFrame extends Handler {
             mCallbackProxy.switchOutDrawHistory();
         }
     }
-	
+
     /**
      * Send the icon to the activity for display.
      * @param icon A Bitmap representing a page's favicon.
@@ -990,12 +982,12 @@ class BrowserFrame extends Handler {
     private void didReceiveIcon(Bitmap icon) {
         mCallbackProxy.onReceivedIcon(icon);
     }
-	
+
     // Called by JNI when an apple-touch-icon attribute was found.
     private void didReceiveTouchIconUrl(String url, boolean precomposed) {
         mCallbackProxy.onReceivedTouchIconUrl(url, precomposed);
     }
-	
+
     /**
      * Request a new window from the client.
      * @return The BrowserFrame object stored in the new WebView.
@@ -1003,54 +995,54 @@ class BrowserFrame extends Handler {
     private BrowserFrame createWindow(boolean dialog, boolean userGesture) {
         return mCallbackProxy.createWindow(dialog, userGesture);
     }
-	
+
     /**
      * Try to focus this WebView.
      */
     private void requestFocus() {
         mCallbackProxy.onRequestFocus();
     }
-	
+
     /**
      * Close this frame and window.
      */
     private void closeWindow(WebViewCore w) {
         mCallbackProxy.onCloseWindow(w.getWebView());
     }
-	
+
     // XXX: Must match PolicyAction in FrameLoaderTypes.h in webcore
     static final int POLICY_USE = 0;
     static final int POLICY_IGNORE = 2;
-	
+
     private void decidePolicyForFormResubmission(int policyFunction) {
         Message dontResend = obtainMessage(POLICY_FUNCTION, policyFunction,
-										   POLICY_IGNORE);
+                POLICY_IGNORE);
         Message resend = obtainMessage(POLICY_FUNCTION, policyFunction,
-									   POLICY_USE);
+                POLICY_USE);
         mCallbackProxy.onFormResubmission(dontResend, resend);
     }
-	
+
     /**
      * Tell the activity to update its global history.
      */
     private void updateVisitedHistory(String url, boolean isReload) {
         mCallbackProxy.doUpdateVisitedHistory(url, isReload);
     }
-	
+
     /**
      * Get the CallbackProxy for sending messages to the UI thread.
      */
     /* package */ CallbackProxy getCallbackProxy() {
         return mCallbackProxy;
     }
-	
+
     /**
      * Returns the User Agent used by this frame
      */
     String getUserAgentString() {
         return mSettings.getUserAgentString();
     }
-	
+
     // These ids need to be in sync with enum rawResId in PlatformBridge.h
     private static final int NODOMAIN = 1;
     private static final int LOADERROR = 2;
@@ -1059,7 +1051,7 @@ class BrowserFrame extends Handler {
     private static final int RESET_LABEL = 5;
     private static final int SUBMIT_LABEL = 6;
     private static final int FILE_UPLOAD_NO_FILE_CHOSEN = 7;
-	
+
     private String getRawResFilename(int id) {
         return getRawResFilename(id, mContext);
     }
@@ -1069,32 +1061,32 @@ class BrowserFrame extends Handler {
             case NODOMAIN:
                 resid = com.android.internal.R.raw.nodomain;
                 break;
-				
+
             case LOADERROR:
                 resid = com.android.internal.R.raw.loaderror;
                 break;
-				
+
             case DRAWABLEDIR:
                 // use one known resource to find the drawable directory
                 resid = com.android.internal.R.drawable.btn_check_off;
                 break;
-				
+
             case FILE_UPLOAD_LABEL:
                 return context.getResources().getString(
-														com.android.internal.R.string.upload_file);
-				
+                        com.android.internal.R.string.upload_file);
+
             case RESET_LABEL:
                 return context.getResources().getString(
-														com.android.internal.R.string.reset);
-				
+                        com.android.internal.R.string.reset);
+
             case SUBMIT_LABEL:
                 return context.getResources().getString(
-														com.android.internal.R.string.submit);
-				
+                        com.android.internal.R.string.submit);
+
             case FILE_UPLOAD_NO_FILE_CHOSEN:
                 return context.getResources().getString(
-														com.android.internal.R.string.no_file_chosen);
-				
+                        com.android.internal.R.string.no_file_chosen);
+
             default:
                 Log.e(LOGTAG, "getRawResFilename got incompatible resource ID");
                 return "";
@@ -1112,11 +1104,11 @@ class BrowserFrame extends Handler {
         }
         return value.string.toString();
     }
-	
+
     private float density() {
         return mContext.getResources().getDisplayMetrics().density;
     }
-	
+
     /**
      * Called by JNI when the native HTTP stack gets an authentication request.
      *
@@ -1129,26 +1121,26 @@ class BrowserFrame extends Handler {
      * synchronous call and unable to pump our MessageQueue.
      */
     private void didReceiveAuthenticationChallenge(
-												   final int handle, String host, String realm, final boolean useCachedCredentials,
-												   final boolean suppressDialog) {
-		
+            final int handle, String host, String realm, final boolean useCachedCredentials,
+            final boolean suppressDialog) {
+
         HttpAuthHandler handler = new HttpAuthHandler() {
-			
+
             @Override
             public boolean useHttpAuthUsernamePassword() {
                 return useCachedCredentials;
             }
-			
+
             @Override
             public void proceed(String username, String password) {
                 nativeAuthenticationProceed(handle, username, password);
             }
-			
+
             @Override
             public void cancel() {
                 nativeAuthenticationCancel(handle);
             }
-			
+
             @Override
             public boolean suppressDialog() {
                 return suppressDialog;
@@ -1156,7 +1148,7 @@ class BrowserFrame extends Handler {
         };
         mCallbackProxy.onReceivedHttpAuthRequest(handler, host, realm);
     }
-	
+
     /**
      * Called by JNI when the Chromium HTTP stack gets an invalid certificate chain.
      *
@@ -1165,7 +1157,7 @@ class BrowserFrame extends Handler {
      * {@link #nativeSslCertErrorCancel(int, int)}.
      */
     private void reportSslCertError(final int handle, final int certError, byte certDER[],
-									String url) {
+            String url) {
         final SslError sslError;
         try {
             X509Certificate cert = new X509CertImpl(certDER);
@@ -1177,35 +1169,27 @@ class BrowserFrame extends Handler {
             nativeSslCertErrorCancel(handle, certError);
             return;
         }
-		
+
         if (SslCertLookupTable.getInstance().isAllowed(sslError)) {
             nativeSslCertErrorProceed(handle);
             mCallbackProxy.onProceededAfterSslError(sslError);
             return;
         }
-		
+
         SslErrorHandler handler = new SslErrorHandler() {
             @Override
             public void proceed() {
                 SslCertLookupTable.getInstance().setIsAllowed(sslError);
-                post(new Runnable() {
-					public void run() {
-						nativeSslCertErrorProceed(handle);
-					}
-				});
+                nativeSslCertErrorProceed(handle);
             }
             @Override
             public void cancel() {
-                post(new Runnable() {
-					public void run() {
-						nativeSslCertErrorCancel(handle, certError);
-					}
-				});
+                nativeSslCertErrorCancel(handle, certError);
             }
         };
         mCallbackProxy.onReceivedSslError(handler, sslError);
     }
-	
+
     /**
      * Called by JNI when the native HTTPS stack gets a client
      * certificate request.
@@ -1226,10 +1210,10 @@ class BrowserFrame extends Handler {
         } else {
             // previously ignored or new
             mCallbackProxy.onReceivedClientCertRequest(
-													   new ClientCertRequestHandler(this, handle, hostAndPort, table), hostAndPort);
+                    new ClientCertRequestHandler(this, handle, hostAndPort, table), hostAndPort);
         }
     }
-	
+
     /**
      * Called by JNI when the native HTTP stack needs to download a file.
      *
@@ -1237,7 +1221,7 @@ class BrowserFrame extends Handler {
      * DownloadListener.
      */
     private void downloadStart(String url, String userAgent,
-							   String contentDisposition, String mimeType, long contentLength) {
+            String contentDisposition, String mimeType, long contentLength) {
         // This will only work if the url ends with the filename
         if (mimeType.isEmpty()) {
             try {
@@ -1251,30 +1235,30 @@ class BrowserFrame extends Handler {
             }
         }
         mimeType = MimeTypeMap.getSingleton().remapGenericMimeType(
-																   mimeType, url, contentDisposition);
-		
+                mimeType, url, contentDisposition);
+
         if (CertTool.getCertType(mimeType) != null) {
             mKeyStoreHandler = new KeyStoreHandler(mimeType);
         } else {
             mCallbackProxy.onDownloadStart(url, userAgent,
-										   contentDisposition, mimeType, contentLength);
+                contentDisposition, mimeType, contentLength);
         }
     }
-	
+
     /**
      * Called by JNI for Chrome HTTP stack when the Java side needs to access the data.
      */
     private void didReceiveData(byte data[], int size) {
         if (mKeyStoreHandler != null) mKeyStoreHandler.didReceiveData(data, size);
     }
-	
+
     private void didFinishLoading() {
-		if (mKeyStoreHandler != null) {
-			mKeyStoreHandler.installCert(mContext);
-			mKeyStoreHandler = null;
-		}
+      if (mKeyStoreHandler != null) {
+          mKeyStoreHandler.installCert(mContext);
+          mKeyStoreHandler = null;
+      }
     }
-	
+
     /**
      * Called by JNI when we recieve a certificate for the page's main resource.
      * Used by the Chromium HTTP stack only.
@@ -1289,22 +1273,22 @@ class BrowserFrame extends Handler {
             return;
         }
     }
-	
+
     /*package*/ SearchBox getSearchBox() {
         return mSearchBox;
     }
-	
+
     /**
      * Called by JNI when processing the X-Auto-Login header.
      */
     private void autoLogin(String realm, String account, String args) {
         mCallbackProxy.onReceivedLoginRequest(realm, account, args);
     }
-	
+
     //==========================================================================
     // native functions
     //==========================================================================
-	
+
     /**
      * Create a new native frame for a given WebView
      * @param w     A WebView that the frame draws into.
@@ -1313,28 +1297,28 @@ class BrowserFrame extends Handler {
      *              the native list changes.
      */
     private native void nativeCreateFrame(WebViewCore w, AssetManager am,
-										  WebBackForwardList list);
-	
+            WebBackForwardList list);
+
     /**
      * Destroy the native frame.
      */
     public native void nativeDestroyFrame();
-	
+
     private native void nativeCallPolicyFunction(int policyFunction,
-												 int decision);
-	
+            int decision);
+
     /**
      * Reload the current main frame.
      */
     public native void reload(boolean allowStale);
-	
+
     /**
      * Go back or forward the number of steps given.
      * @param steps A negative or positive number indicating the direction
      *              and number of steps to move.
      */
     private native void nativeGoBackOrForward(int steps);
-	
+
     /**
      * stringByEvaluatingJavaScriptFromString will execute the
      * JS passed in in the context of this browser frame.
@@ -1343,34 +1327,34 @@ class BrowserFrame extends Handler {
      * @return string result of execution or null
      */
     public native String stringByEvaluatingJavaScriptFromString(String script);
-	
+
     /**
      * Add a javascript interface to the main frame.
      */
     private native void nativeAddJavascriptInterface(int nativeFramePointer,
-													 Object obj, String interfaceName);
-	
+            Object obj, String interfaceName);
+
     /**
      * Enable or disable the native cache.
      */
     /* FIXME: The native cache is always on for now until we have a better
      * solution for our 2 caches. */
     private native void setCacheDisabled(boolean disabled);
-	
+
     public native boolean cacheDisabled();
-	
+
     public native void clearCache();
-	
+
     /**
      * Returns false if the url is bad.
      */
     private native void nativeLoadUrl(String url, Map<String, String> headers);
-	
+
     private native void nativePostUrl(String url, byte[] postData);
-	
+
     private native void nativeLoadData(String baseUrl, String data,
-									   String mimeType, String encoding, String historyUrl);
-	
+            String mimeType, String encoding, String historyUrl);
+
     /**
      * Stop loading the current page.
      */
@@ -1380,47 +1364,47 @@ class BrowserFrame extends Handler {
         }
         nativeStopLoading();
     }
-	
+
     private native void nativeStopLoading();
-	
+
     /**
      * Return true if the document has images.
      */
     public native boolean documentHasImages();
-	
+
     /**
      * @return TRUE if there is a password field in the current frame
      */
     private native boolean hasPasswordField();
-	
+
     /**
      * Get username and password in the current frame. If found, String[0] is
      * username and String[1] is password. Otherwise return NULL.
      * @return String[]
      */
     private native String[] getUsernamePassword();
-	
+
     /**
      * Set username and password to the proper fields in the current frame
      * @param username
      * @param password
      */
     private native void setUsernamePassword(String username, String password);
-	
+
     private native String nativeSaveWebArchive(String basename, boolean autoname);
-	
+
     private native void nativeOrientationChanged(int orientation);
-	
+
     private native void nativeAuthenticationProceed(int handle, String username, String password);
     private native void nativeAuthenticationCancel(int handle);
-	
+
     private native void nativeSslCertErrorProceed(int handle);
     private native void nativeSslCertErrorCancel(int handle, int certError);
-	
+
     native void nativeSslClientCert(int handle,
                                     byte[] pkcs8EncodedPrivateKey,
                                     byte[][] asn1DerEncodedCertificateChain);
-	
+
     /**
      * Returns true when the contents of the frame is an RTL or vertical-rl
      * page. This is used for determining whether a frame should be initially
@@ -1431,6 +1415,6 @@ class BrowserFrame extends Handler {
     /* package */ boolean getShouldStartScrolledRight() {
         return nativeGetShouldStartScrolledRight(mNativeFrame);
     }
-	
+
     private native boolean nativeGetShouldStartScrolledRight(int nativeBrowserFrame);
 }

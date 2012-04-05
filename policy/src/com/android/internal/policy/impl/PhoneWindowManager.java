@@ -2828,14 +2828,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             mVolumeDownKeyConsumedByScreenshotChord = false;
                             cancelPendingPowerKeyAction();
                             interceptScreenshotChord();
-                        }
+						}
 
-                        if(!isScreenOn && mEnableQuickTorch) {
-                            handleChangeTorchState(true);
-                        }
+				if(!isScreenOn && mEnableQuickTorch) {
+					handleChangeTorchState(true);
+
+					}
 
                     } else {
-                        handleChangeTorchState(false);
+						handleChangeTorchState(false);
                         mVolumeDownKeyTriggered = false;
                         cancelPendingScreenshotChordAction();
                     }
@@ -2941,7 +2942,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         interceptScreenshotChord();
                     }
 
-                    ITelephony telephonyService = getTelephonyService();
+					ITelephony telephonyService = getTelephonyService();
                     boolean hungUp = false;
                     if (telephonyService != null) {
                         try {

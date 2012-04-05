@@ -119,6 +119,9 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTop" >
         </activity>
+        <activity
+            android:name="com.android.systemui.statusbar.powerwidget.Torch">
+        </activity>
 
         <!-- started from ... somewhere -->
         <activity

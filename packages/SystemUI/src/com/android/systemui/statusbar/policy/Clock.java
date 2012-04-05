@@ -236,6 +236,12 @@ class SettingsObserver extends ContentObserver {
 		resolver.registerContentObserver(
 										 Settings.System.getUriFor(Settings.System.STATUSBAR_CLOCK_STYLE), false, this);
 		updateSettings();
+		
+		resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.STATUSBAR_CLOCK_COLOR), false, this);
+		resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.STATUSBAR_CLOCK_LOCKSCREEN_HIDE), false, this);
+		
 	}
 	
 	@Override
@@ -254,8 +260,19 @@ if (mAttached) {
 updateClock();
 }
 
+mClockColor = Settings.System.getInt(resolver, Settings.System.STATUSBAR_CLOCK_COLOR,
+0xFF33B5E5);
+if (mClockColor == Integer.MIN_VALUE) {
+// flag to reset the color
+mClockColor = 0xFF33B5E5;
+}
+setTextColor(mClockColor);
+
 mClockStyle = Settings.System.getInt(resolver, Settings.System.STATUSBAR_CLOCK_STYLE, 1);	
         updateClockVisibility();
+
+mShowClockDuringLockscreen = (Settings.System.getInt(resolver,	
+		Settings.System.STATUSBAR_CLOCK_LOCKSCREEN_HIDE, 1) == 1);
 }
 
 protected void updateClockVisibility() {

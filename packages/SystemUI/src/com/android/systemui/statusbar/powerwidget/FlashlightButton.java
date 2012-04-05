@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FlashlightButton extends PowerButton {
-    
+	
     private static final List<Uri> OBSERVED_URIS = new ArrayList<Uri>();
     static {
         OBSERVED_URIS.add(Settings.System.getUriFor(Settings.System.TORCH_STATE));
@@ -21,9 +21,9 @@ public class FlashlightButton extends PowerButton {
     public static final String INTENT_TORCH_ON = "com.android.systemui.INTENT_TORCH_ON";
     public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
     boolean mFastTorchOn;
-    
+	
     public FlashlightButton() { mType = BUTTON_FLASHLIGHT; }
-    
+	
     @Override
     protected void updateState() {
         boolean enabled = Settings.System.getInt(mView.getContext().getContentResolver(), Settings.System.TORCH_STATE, 0) == 1;
@@ -35,7 +35,7 @@ public class FlashlightButton extends PowerButton {
             mState = STATE_DISABLED;
         }
     }
-    
+	
     @Override
     protected void toggleState() {
         boolean enabled = Settings.System.getInt(mView.getContext().getContentResolver(), Settings.System.TORCH_STATE, 0) == 1;
@@ -55,12 +55,12 @@ public class FlashlightButton extends PowerButton {
             mFastTorchOn = false;
         }
     }
-    
+	
     @Override
     protected boolean handleLongClick() {
         return false;
     }
-    
+	
     @Override
     protected List<Uri> getObservedUris() {
         return OBSERVED_URIS;

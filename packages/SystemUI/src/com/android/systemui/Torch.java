@@ -23,6 +23,8 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.os.Bundle;
@@ -40,31 +42,37 @@ import com.android.systemui.R;
  * Torch is an LED flashlight.
  */
 public class Torch extends Activity implements SurfaceHolder.Callback {
-
+	
     private static final String TAG = "Torch";
-
+	
     private static final String WAKE_LOCK_TAG = "TORCH_WAKE_LOCK";
-
+	
     private Camera mCamera;
     private boolean lightOn;
+    private boolean startingTorch;
     private boolean previewOn;
     private View button;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
-
+    private SharedPreferences prefs;
+	
     private WakeLock wakeLock;
-
+	
     private static Torch torch;
-
+    
+    public static final String KEY_TORCH_ON = "torch_on";
+    public static final String INTENT_TORCH_ON = "com.android.systemui.INTENT_TORCH_ON";
+    public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
+	
     public Torch() {
         super();
         torch = this;
     }
-
+	
     public static Torch getTorch() {
         return torch;
     }
-
+	
     private void getCamera() {
         if (mCamera == null) {
             try {
@@ -74,9 +82,9 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             }
         }
     }
-
+	
     private void turnLightOn() {
-
+		
         if (mCamera == null) {
             Log.d(TAG, "Camera not Found!");
             return;
@@ -94,8 +102,6 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             return;
         }
         String flashMode = parameters.getFlashMode();
-        Log.i(TAG, "Flash mode: " + flashMode);
-        Log.i(TAG, "Flash modes: " + flashModes);
         if (!Parameters.FLASH_MODE_TORCH.equals(flashMode)) {
             // Turn on the flash
             if (flashModes.contains(Parameters.FLASH_MODE_TORCH)) {
@@ -107,7 +113,7 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             }
         }
     }
-
+	
     private void turnLightOff() {
         if (lightOn) {
             // set the background to dark
@@ -139,21 +145,21 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             }
         }
     }
-
+	
     private void startPreview() {
         if (!previewOn && mCamera != null) {
             mCamera.startPreview();
             previewOn = true;
         }
     }
-
+	
     private void stopPreview() {
         if (previewOn && mCamera != null) {
             mCamera.stopPreview();
             previewOn = false;
         }
     }
-
+	
     private void startWakeLock() {
         if (wakeLock == null) {
             Log.d(TAG, "wakeLock is null, getting a new WakeLock");
@@ -165,14 +171,14 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
         wakeLock.acquire();
         Log.d(TAG, "WakeLock acquired");
     }
-
+	
     private void stopWakeLock() {
         if (wakeLock != null) {
             wakeLock.release();
             Log.d(TAG, "WakeLock released");
         }
     }
-
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -181,60 +187,84 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
         surfaceView = (SurfaceView) this.findViewById(R.id.surfaceview);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
-        // surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        surfaceHolder.setKeepScreenOn(true);
-        disablePhoneSleep();
+        prefs = getSharedPreferences("torch", Context.MODE_WORLD_READABLE);
         Log.i(TAG, "onCreate");
     }
-
-    private void disablePhoneSleep() {
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+	
+    private void startTorch(){
+		if (!startingTorch) {
+			startingTorch = true;
+			getCamera();
+			startPreview();
+			turnLightOn();
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.putBoolean(KEY_TORCH_ON,true);
+			editor.commit();
+			startingTorch = false;
+		}
     }
-
+    
+    
+    private void stopTorch(){
+		if (!startingTorch) {
+			if (mCamera != null) {
+                turnLightOff();
+                stopPreview();
+                mCamera.release();
+			}
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.putBoolean(KEY_TORCH_ON,false);
+			editor.commit();
+			this.finish();
+		}
+    }
+	
     @Override
     public void onRestart() {
         super.onRestart();
     }
-
+	
     @Override
     public void onStart() {
         super.onStart();
-        getCamera();
-        startPreview();
     }
-
+	
     @Override
     public void onResume() {
         super.onResume();
-        turnLightOn();
+        String action = getIntent().getAction();
+		if (action == INTENT_TORCH_ON) {
+			startTorch();
+		} else if (action == INTENT_TORCH_OFF) {
+			stopTorch();
+		}
     }
-
+	
     @Override
     public void onPause() {
         super.onPause();
     }
-
+	
     @Override
     public void onStop() {
         super.onStop();
     }
-
+	
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mCamera != null) {
-            turnLightOff();
-            stopPreview();
-            mCamera.release();
-            torch = null;
-        }
     }
-
+    
+    @Override
+    public void onNewIntent(Intent intent){
+		setIntent(intent);
+    }
+	
     @Override
     public void surfaceChanged(SurfaceHolder holder, int I, int J, int K) {
         moveTaskToBack(true); // once Surface is set up - we should be able to background ourselves.
     }
-
+	
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         try {
@@ -243,7 +273,7 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             e.printStackTrace();
         }
     }
-
+	
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
     }

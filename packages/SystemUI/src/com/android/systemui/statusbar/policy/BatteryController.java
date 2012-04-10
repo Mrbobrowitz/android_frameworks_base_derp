@@ -53,7 +53,6 @@ public class BatteryController extends LinearLayout {
     private TextView mBatteryCenterText;
     private ViewGroup mBatteryGroup;
     private TextView mBatteryTextOnly;
-	
     private static int mBatteryStyle;
 	
     private int mLevel = -1;
@@ -119,71 +118,71 @@ public class BatteryController extends LinearLayout {
 }
 };
 
-private void setBatteryIcon(int level, boolean plugged) {
-mLevel = level;
-mPlugged = plugged;
-ContentResolver cr = mContext.getContentResolver();
-mBatteryStyle = Settings.System.getInt(cr,
-Settings.System.STATUSBAR_BATTERY_ICON, 0);
-int icon;
-if (mBatteryStyle == STYLE_ICON_CIRCLE) {
-	icon = plugged ? R.drawable.stat_sys_battery_charge_circle
-		: R.drawable.stat_sys_battery_circle;
-} else if (mBatteryStyle == STYLE_ICON_HONEYCOMB) {
-	icon = plugged ? R.drawable.stat_sys_battery_charge_honeycomb
-		: R.drawable.stat_sys_battery_honeycomb;
-} else if (mBatteryStyle == STYLE_ICON_SMOOTH_CIRCLE) {
-	icon = plugged ? R.drawable.stat_sys_battery_charge_smooth_circle
-		: R.drawable.stat_sys_battery_smooth_circle;
-} else {
-	icon = plugged ? R.drawable.stat_sys_battery_charge
-		: R.drawable.stat_sys_battery;
-}
+		private void setBatteryIcon(int level, boolean plugged) {
+			mLevel = level;
+			mPlugged = plugged;
+				ContentResolver cr = mContext.getContentResolver();
+			mBatteryStyle = Settings.System.getInt(cr,
+				Settings.System.STATUSBAR_BATTERY_ICON, 0);
+			int icon;
+		if (mBatteryStyle == STYLE_ICON_CIRCLE) {
+					icon = plugged ? R.drawable.stat_sys_battery_charge_circle
+						: R.drawable.stat_sys_battery_circle;
+		} else if (mBatteryStyle == STYLE_ICON_HONEYCOMB) {
+					icon = plugged ? R.drawable.stat_sys_battery_charge_honeycomb
+						: R.drawable.stat_sys_battery_honeycomb;
+		} else if (mBatteryStyle == STYLE_ICON_SMOOTH_CIRCLE) {
+					icon = plugged ? R.drawable.stat_sys_battery_charge_smooth_circle
+						: R.drawable.stat_sys_battery_smooth_circle;
+		} else {
+					icon = plugged ? R.drawable.stat_sys_battery_charge
+						: R.drawable.stat_sys_battery;
+		}
 
-int N = mIconViews.size();
-for (int i = 0; i < N; i++) {
-ImageView v = mIconViews.get(i);
-v.setImageResource(icon);
-v.setImageLevel(level);
-v.setContentDescription(mContext.getString(
-R.string.accessibility_battery_level, level));
-}
-N = mLabelViews.size();
-for (int i = 0; i < N; i++) {
-TextView v = mLabelViews.get(i);
-v.setText(mContext.getString(
-R.string.status_bar_settings_battery_meter_format, level));
-}
+		int N = mIconViews.size();
+			for (int i = 0; i < N; i++) {
+				ImageView v = mIconViews.get(i);
+				v.setImageResource(icon);
+				v.setImageLevel(level);
+				v.setContentDescription(mContext.getString(
+					R.string.accessibility_battery_level, level));
+			}
+			N = mLabelViews.size();
+			for (int i = 0; i < N; i++) {
+				TextView v = mLabelViews.get(i);
+					v.setText(mContext.getString(
+						R.string.status_bar_settings_battery_meter_format, level));
+			}
 
-// do my stuff here
-if (mBatteryGroup != null) {
-mBatteryText.setText(Integer.toString(level));
-mBatteryCenterText.setText(Integer.toString(level));
-mBatteryTextOnly.setText(Integer.toString(level));
-SpannableStringBuilder formatted = new SpannableStringBuilder(
-Integer.toString(level) + "%");
-CharacterStyle style = new RelativeSizeSpan(0.7f); // beautiful
-// formatting
-if (level < 10) { // level < 10, 2nd char is %
-formatted.setSpan(style, 1, 2,
-Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-} else if (level < 100) { // level 10-99, 3rd char is %
-formatted.setSpan(style, 2, 3,
-Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-} else { // level 100, 4th char is %
-formatted.setSpan(style, 3, 4,
-Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-}
-mBatteryTextOnly.setText(formatted);
-if (plugged) { // colors hardcoded by now, maybe colorpicker can be
-// added if needed
-mBatteryTextOnly.setTextColor(Color.GREEN);
-} else if (level < 16) {
-mBatteryTextOnly.setTextColor(Color.RED);
-} else {
-mBatteryTextOnly.setTextColor(0xFF33B5E5);
-}
-}
+			// do my stuff here
+			if (mBatteryGroup != null) {
+				mBatteryText.setText(Integer.toString(level));
+				mBatteryCenterText.setText(Integer.toString(level));
+				mBatteryTextOnly.setText(Integer.toString(level));
+					SpannableStringBuilder formatted = new SpannableStringBuilder(
+					Integer.toString(level) + "%");
+				CharacterStyle style = new RelativeSizeSpan(0.7f); // beautiful
+			// formatting
+			if (level < 10) { // level < 10, 2nd char is %
+				formatted.setSpan(style, 1, 2,
+				Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+			} else if (level < 100) { // level 10-99, 3rd char is %
+				formatted.setSpan(style, 2, 3,
+				Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+			} else { // level 100, 4th char is %
+				formatted.setSpan(style, 3, 4,
+				Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+			}
+				mBatteryTextOnly.setText(formatted);
+			if (plugged) { // colors hardcoded by now, maybe colorpicker can be
+							// added if needed
+				mBatteryTextOnly.setTextColor(Color.GREEN);
+			} else if (level < 16) {
+				mBatteryTextOnly.setTextColor(Color.RED);
+			} else {
+			mBatteryTextOnly.setTextColor(0xFF33B5E5);
+					}
+	}
 }
 
     

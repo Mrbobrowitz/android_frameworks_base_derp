@@ -23,8 +23,6 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.os.Bundle;
@@ -49,20 +47,14 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
 	
     private Camera mCamera;
     private boolean lightOn;
-    private boolean startingTorch;
     private boolean previewOn;
     private View button;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
-    private SharedPreferences prefs;
 	
     private WakeLock wakeLock;
 	
     private static Torch torch;
-    
-    public static final String KEY_TORCH_ON = "torch_on";
-    public static final String INTENT_TORCH_ON = "com.android.systemui.INTENT_TORCH_ON";
-    public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
 	
     public Torch() {
         super();
@@ -102,6 +94,8 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
             return;
         }
         String flashMode = parameters.getFlashMode();
+        Log.i(TAG, "Flash mode: " + flashMode);
+        Log.i(TAG, "Flash modes: " + flashModes);
         if (!Parameters.FLASH_MODE_TORCH.equals(flashMode)) {
             // Turn on the flash
             if (flashModes.contains(Parameters.FLASH_MODE_TORCH)) {
@@ -187,36 +181,14 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
         surfaceView = (SurfaceView) this.findViewById(R.id.surfaceview);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
-        prefs = getSharedPreferences("torch", Context.MODE_WORLD_READABLE);
+        // surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        surfaceHolder.setKeepScreenOn(true);
+        disablePhoneSleep();
         Log.i(TAG, "onCreate");
     }
 	
-    private void startTorch(){
-		if (!startingTorch) {
-			startingTorch = true;
-			getCamera();
-			startPreview();
-			turnLightOn();
-			SharedPreferences.Editor editor = prefs.edit();
-			editor.putBoolean(KEY_TORCH_ON,true);
-			editor.commit();
-			startingTorch = false;
-		}
-    }
-    
-    
-    private void stopTorch(){
-		if (!startingTorch) {
-			if (mCamera != null) {
-                turnLightOff();
-                stopPreview();
-                mCamera.release();
-			}
-			SharedPreferences.Editor editor = prefs.edit();
-			editor.putBoolean(KEY_TORCH_ON,false);
-			editor.commit();
-			this.finish();
-		}
+    private void disablePhoneSleep() {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 	
     @Override
@@ -227,17 +199,14 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onStart() {
         super.onStart();
+        getCamera();
+        startPreview();
     }
 	
     @Override
     public void onResume() {
         super.onResume();
-        String action = getIntent().getAction();
-		if (action == INTENT_TORCH_ON) {
-			startTorch();
-		} else if (action == INTENT_TORCH_OFF) {
-			stopTorch();
-		}
+        turnLightOn();
     }
 	
     @Override
@@ -253,11 +222,12 @@ public class Torch extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onDestroy() {
         super.onDestroy();
-    }
-    
-    @Override
-    public void onNewIntent(Intent intent){
-		setIntent(intent);
+        if (mCamera != null) {
+            turnLightOff();
+            stopPreview();
+            mCamera.release();
+            torch = null;
+        }
     }
 	
     @Override

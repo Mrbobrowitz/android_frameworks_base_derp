@@ -1,4 +1,4 @@
-package com.android.systemui.statusbar.powerwidget;
+ackage com.android.systemui;
 
 
 
@@ -14,12 +14,12 @@ import android.content.SharedPreferences;
 
 
 public class TorchService extends IntentService {
-
+	
     public static final String TAG = "TorchService";
     public static final String KEY_TORCH_ON = "torch_on";
     public static final String INTENT_TORCH_ON = "com.android.systemui.INTENT_TORCH_ON";
     public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
-
+	
     Context mContext;
     SharedPreferences prefs;
     Torch mTorch;
@@ -56,7 +56,7 @@ public class TorchService extends IntentService {
     			++Runaway;
     			try {Thread.sleep(10); // let's sleep a few ms and let camera catch up
                 } catch (InterruptedException e) {
-                   Log.e(TAG,"InterruptedException!");
+					Log.e(TAG,"InterruptedException!");
                 }
     		}  	while (mTorch==null && Runaway <200);
     	}

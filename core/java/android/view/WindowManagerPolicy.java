@@ -296,6 +296,12 @@ public interface WindowManagerPolicy {
          * window manager lock held.
          */
         boolean isDisplayedLw();
+		
+		/**
+		 * Is this window considered to be gone for purposes of layout?
+		 */
+		boolean isGoneForLayoutLw();
+		 
 
         /**
          * Returns true if this window has been shown on screen at some time in 
@@ -1023,6 +1029,11 @@ public interface WindowManagerPolicy {
     public boolean hasNavigationBar();
 
     /**
+	 * Lock the device now.
+	 */
+	public void lockNow();
+	
+	/**
      * Print the WindowManagerPolicy's state into the given stream.
      *
      * @param prefix Text to print at the front of each line.

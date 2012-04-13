@@ -16,6 +16,7 @@
 
 package android.webkit;
 
+import android.os.Handler;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -29,7 +30,7 @@ import org.apache.harmony.xnet.provider.jsse.NativeCrypto;
  *
  * @hide
  */
-public final class ClientCertRequestHandler {
+public final class ClientCertRequestHandler extends Handler {
 
     private final BrowserFrame mBrowserFrame;
     private final int mHandle;
@@ -49,30 +50,46 @@ public final class ClientCertRequestHandler {
      * Proceed with the specified private key and client certificate chain.
      */
     public void proceed(PrivateKey privateKey, X509Certificate[] chain) {
-        byte[] privateKeyBytes = privateKey.getEncoded();
-        byte[][] chainBytes;
-        try {
+		final byte[] privateKeyBytes = privateKey.getEncoded();
+		final byte[][] chainBytes;
+		try {
             chainBytes = NativeCrypto.encodeCertificates(chain);
+			mTable.Allow(mHostAndPort, privateKeyBytes, chainBytes);
+			post(new Runnable() {
+				public void run() {
+					mBrowserFrame.nativeSslClientCert(mHandle, privateKeyBytes, chainBytes);
+				}
+			});
         } catch (CertificateEncodingException e) {
-            mBrowserFrame.nativeSslClientCert(mHandle, null, null);
-            return;
+            post(new Runnable() {
+				public void run() {
+					mBrowserFrame.nativeSslClientCert(mHandle, null, null);
+					return;
+				}
+			});
         }
-        mTable.Allow(mHostAndPort, privateKeyBytes, chainBytes);
-        mBrowserFrame.nativeSslClientCert(mHandle, privateKeyBytes, chainBytes);
     }
 
     /**
      * Igore the request for now, the user may be prompted again.
      */
     public void ignore() {
-        mBrowserFrame.nativeSslClientCert(mHandle, null, null);
-    }
+       post(new Runnable() {
+			public void run() {
+				mBrowserFrame.nativeSslClientCert(mHandle, null, null);
+			}
+	   });  
+	}
 
     /**
      * Cancel this request, remember the users negative choice.
      */
     public void cancel() {
         mTable.Deny(mHostAndPort);
-        mBrowserFrame.nativeSslClientCert(mHandle, null, null);
+        post(new Runnable() {
+			public void run() {
+				mBrowserFrame.nativeSslClientCert(mHandle, null, null);
+			}
+		});
     }
 }

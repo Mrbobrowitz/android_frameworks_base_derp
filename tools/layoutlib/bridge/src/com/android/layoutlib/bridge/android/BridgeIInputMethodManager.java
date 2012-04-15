@@ -36,152 +36,155 @@ import java.util.List;
  *
  */
 public class BridgeIInputMethodManager implements IInputMethodManager {
-
+	
     public void addClient(IInputMethodClient arg0, IInputContext arg1, int arg2, int arg3)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void finishInput(IInputMethodClient arg0) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public InputMethodSubtype getCurrentInputMethodSubtype() throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public List<InputMethodInfo> getEnabledInputMethodList() throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public List<InputMethodSubtype> getEnabledInputMethodSubtypeList(InputMethodInfo arg0,
-            boolean arg1) throws RemoteException {
+																	 boolean arg1) throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public List<InputMethodInfo> getInputMethodList() throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public InputMethodSubtype getLastInputMethodSubtype() throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public List getShortcutInputMethodsAndSubtypes() throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public void hideMySoftInput(IBinder arg0, int arg1) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public boolean hideSoftInput(IInputMethodClient arg0, int arg1, ResultReceiver arg2)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
+	
     public boolean notifySuggestionPicked(SuggestionSpan arg0, String arg1, int arg2)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
+	
     public void registerSuggestionSpansForNotification(SuggestionSpan[] arg0)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void removeClient(IInputMethodClient arg0) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void setAdditionalInputMethodSubtypes(String arg0, InputMethodSubtype[] arg1)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
     }
-
+	
     public boolean setCurrentInputMethodSubtype(InputMethodSubtype arg0) throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
+	
     public void setImeWindowStatus(IBinder arg0, int arg1, int arg2) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void setInputMethod(IBinder arg0, String arg1) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void setInputMethodAndSubtype(IBinder arg0, String arg1, InputMethodSubtype arg2)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public boolean setInputMethodEnabled(String arg0, boolean arg1) throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
+	
     public void showInputMethodAndSubtypeEnablerFromClient(IInputMethodClient arg0, String arg1)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void showInputMethodPickerFromClient(IInputMethodClient arg0) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public void showMySoftInput(IBinder arg0, int arg1) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
+	
     public boolean showSoftInput(IInputMethodClient arg0, int arg1, ResultReceiver arg2)
-            throws RemoteException {
+	throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
-    public InputBindResult startInput(IInputMethodClient arg0, IInputContext arg1, EditorInfo arg2,
-            boolean arg3, boolean arg4) throws RemoteException {
+	
+	
+    public InputBindResult startInput(IInputMethodClient client, IInputContext inputContext,
+									  EditorInfo attribute, int controlFlags) throws RemoteException {
         // TODO Auto-generated method stub
         return null;
     }
-
+	
     public boolean switchToLastInputMethod(IBinder arg0) throws RemoteException {
         // TODO Auto-generated method stub
         return false;
     }
-
+	
     public void updateStatusIcon(IBinder arg0, String arg1, int arg2) throws RemoteException {
         // TODO Auto-generated method stub
-
+		
     }
-
-    public void windowGainedFocus(IInputMethodClient arg0, IBinder arg1, boolean arg2,
-            boolean arg3, int arg4, boolean arg5, int arg6) throws RemoteException {
+	
+    @Override
+    public InputBindResult windowGainedFocus(IInputMethodClient client, IBinder windowToken,
+											 int controlFlags, int softInputMode, int windowFlags, EditorInfo attribute,
+											 IInputContext inputContext) throws RemoteException {
         // TODO Auto-generated method stub
-
+        return null;
     }
-
+	
     public IBinder asBinder() {
         // TODO Auto-generated method stub
         return null;

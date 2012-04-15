@@ -1443,6 +1443,16 @@ final class WindowState implements WindowManagerPolicy.WindowState {
                     (atoken == null || !atoken.hiddenRequested))
                     || mAnimating);
     }
+	
+	public boolean isGoneForLayoutLw() {
+        final AppWindowToken atoken = mAppToken;
+        return mViewVisibility == View.GONE
+		|| !mRelayoutCalled
+		|| (atoken == null && mRootToken.hidden)
+		|| (atoken != null && (atoken.hiddenRequested || atoken.hidden))
+		|| mAttachedHidden
+		|| mExiting || mDestroying;
+    }
 
     /**
      * Returns true if the window has a surface that it has drawn a

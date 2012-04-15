@@ -1101,4 +1101,5 @@ public class LockPatternUtils {
     public boolean getPowerButtonInstantlyLocks() {
         return getBoolean(LOCKSCREEN_POWER_BUTTON_INSTANTLY_LOCKS, true);
 		
+	}
 }

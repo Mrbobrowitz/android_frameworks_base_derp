@@ -1027,7 +1027,7 @@ public final class InputMethodManager {
                 if (DEBUG) Log.v(TAG, 
                         "Starting input: finished by someone else (view="
                         + mServedView + " conn=" + mServedConnecting + ")");
-                return;
+                return false;
             }
             
             // If we already have a text box, then this view is already

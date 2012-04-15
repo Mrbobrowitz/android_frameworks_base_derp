@@ -17,9 +17,12 @@
 package com.android.systemui.statusbar.phone;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.os.Handler;
 import android.provider.Settings;
 import android.provider.Telephony;
 import android.util.AttributeSet;
@@ -122,7 +125,12 @@ public class CarrierLabel extends TextView {
             setText(customLabel);
         }
 }
-
+		private void updateSettings() {
+			ContentResolver resolver = mContext.getContentResolver();
+			int mColorChanger = Settings.System.getInt(resolver,
+			Settings.System.USE_CUSTOM_CARRIER_COLOR, 0xFF33B5E5);
+			setTextColor(mColorChanger);
+		}
     
 }
 

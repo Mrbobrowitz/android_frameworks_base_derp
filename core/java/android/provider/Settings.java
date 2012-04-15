@@ -2173,7 +2173,7 @@ public final class Settings {
          */
         public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
 		
-		
+		public static final String USE_CUSTOM_CARRIER_COLOR = "use_custom_carrier_color";
 		/**
          * Lockscreen toggle to allow 4 icons 0:false/1:true
          * @hide

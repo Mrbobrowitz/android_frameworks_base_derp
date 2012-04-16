@@ -2141,6 +2141,14 @@ public final class Settings {
 		public static final String STATUSBAR_SHOW_ALARM = "statusbar_show_alarm";
 		public static final String STATUSBAR_CLOCK_COLOR = "statusbar_clock_color";
 		public static final String STATUSBAR_CLOCK_LOCKSCREEN_HIDE = "statusbar_clock_lockscreen_hide";
+		
+		
+		/**
+         * Setting to enable volume options.
+         * 
+         * @hide
+         */
+		public static final String ENABLE_VOLUME_OPTIONS = "enable_volume_options";
  		
 		
 		/**
@@ -2174,6 +2182,13 @@ public final class Settings {
         public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
 		
 		public static final String USE_CUSTOM_CARRIER_COLOR = "use_custom_carrier_color";
+        
+        /**
+         * Whether or not volume button music controls should be enabled to seek media tracks
+         * @hide
+         */
+        public static final String VOLBTN_MUSIC_CONTROLS = "volbtn_music_controls";
+         
 		/**
          * Lockscreen toggle to allow 4 icons 0:false/1:true
          * @hide
@@ -2575,6 +2590,18 @@ public final class Settings {
 		 *@hide
 		 */ 
 		public static final String STATUSBAR_BATTERY_BAR = "statusbar_battery_bar";
+		
+		 /**
+		  * Alpha % for icons in the notification bar.
+		  *@hide
+		  */
+		public static final String STATUSBAR_NOTIFICATION_ALPHA = "statusbar_notification_alpha";
+		
+		/**
+		 * Colorfilter for the statusbar notifications.
+		 * @hide
+		 */
+		public static final String STATUSBAR_NOTIFICATION_COLOR = "statusbar_notification_color";
 		
 		/**
          *

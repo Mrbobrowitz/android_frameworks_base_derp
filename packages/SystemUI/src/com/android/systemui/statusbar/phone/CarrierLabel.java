@@ -42,6 +42,7 @@ import com.android.internal.R;
  */
 public class CarrierLabel extends TextView {
     private boolean mAttached;
+	private Handler mHandler;
 
     public CarrierLabel(Context context) {
         this(context, null);
@@ -54,7 +55,13 @@ public class CarrierLabel extends TextView {
     public CarrierLabel(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         updateNetworkName(false, null, false, null);
-    }
+    
+	
+		mHandler = new Handler();
+		SettingsObserver settingsObserver = new SettingsObserver(mHandler);
+		settingsObserver.observe();
+		
+	}
 
     @Override
     protected void onAttachedToWindow() {
@@ -125,13 +132,27 @@ public class CarrierLabel extends TextView {
             setText(customLabel);
         }
 }
+
+		class SettingsObserver extends ContentObserver {
+			SettingsObserver(Handler handler) {
+				super(handler);
+			}
+			void observe() {
+				ContentResolver resolver = mContext.getContentResolver();
+				resolver.registerContentObserver(
+						Settings.System.getUriFor(Settings.System.USE_CUSTOM_CARRIER_COLOR), false, this);
+			}
+			@Override
+			public void onChange(boolean selfChange) {
+				updateSettings();
+			}
+			
 		private void updateSettings() {
 			ContentResolver resolver = mContext.getContentResolver();
 			int mColorChanger = Settings.System.getInt(resolver,
 			Settings.System.USE_CUSTOM_CARRIER_COLOR, 0xFF33B5E5);
+			
 			setTextColor(mColorChanger);
 		}
-    
+		}
 }
-
-

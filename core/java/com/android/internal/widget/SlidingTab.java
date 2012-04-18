@@ -229,6 +229,10 @@ public class SlidingTab extends ViewGroup {
         void setHintText(int resId) {
             text.setText(resId);
         }
+		
+		void setHintText(CharSequence charText) {
+			text.setText(charText);
+		}
 
         void hide() {
             boolean horiz = alignment == ALIGN_LEFT || alignment == ALIGN_RIGHT;
@@ -801,6 +805,12 @@ public class SlidingTab extends ViewGroup {
             mRightSlider.setHintText(resId);
         }
     }
+
+	public void setRightHintText(CharSequence charText) {
+		if (isHorizontal()) {
+			mRightSlider.setHintText(charText);
+		}
+	}
 
     public void setHoldAfterTrigger(boolean holdLeft, boolean holdRight) {
         mHoldLeftOnTransition = holdLeft;

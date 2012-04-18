@@ -350,6 +350,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     WindowState mFocusedWindow;
     IApplicationToken mFocusedApp;
 	
+	// Behavior of volume wake
+	boolean mVolumeWakeScreen;
+	
+	// Behavior of volbtn music controls
+	boolean mVolBtnMusicControls;
+	boolean mIsLongPress;
+	
     private final InputHandler mPointerLocationInputHandler = new BaseInputHandler() {
 	@Override
 	public void handleMotion(MotionEvent event, InputQueue.FinishedCallback finishedCallback) {
@@ -482,11 +489,15 @@ class SettingsObserver extends ContentObserver {
 		resolver.registerContentObserver(Settings.Secure.getUriFor(
 																   Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
+																   Settings.System.VOLUME_WAKE_SCREEN), false, this);
+		resolver.registerContentObserver(Settings.System.getUriFor(
 																   Settings.System.ACCELEROMETER_ROTATION), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
 																   Settings.System.USER_ROTATION), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
 																   Settings.System.SCREEN_OFF_TIMEOUT), false, this);
+		resolver.registerContentObserver(Settings.System.getUriFor(
+																   Settings.System.VOLBTN_MUSIC_CONTROLS), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
 																   Settings.System.ENABLE_FAST_TORCH), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
@@ -519,275 +530,331 @@ class MyOrientationListener extends WindowOrientationListener {
 		updateRotation(false);
 	}
 }
-MyOrientationListener mOrientationListener;
+		MyOrientationListener mOrientationListener;
 
-/*
- * We always let the sensor be switched on by default except when
- * the user has explicitly disabled sensor based rotation or when the
- * screen is switched off.
- */
-boolean needSensorRunningLp() {
-if (mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR
-|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE) {
-// If the application has explicitly requested to follow the
-// orientation, then we need to turn the sensor or.
-return true;
-}
-if ((mCarDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_CAR) ||
-(mDeskDockEnablesAccelerometer && (mDockMode == Intent.EXTRA_DOCK_STATE_DESK
-|| mDockMode == Intent.EXTRA_DOCK_STATE_LE_DESK
-|| mDockMode == Intent.EXTRA_DOCK_STATE_HE_DESK))) {
-// enable accelerometer if we are docked in a dock that enables accelerometer
-// orientation management,
-return true;
-}
-if (mAccelerometerDefault == 0) {
-// If the setting for using the sensor by default is enabled, then
-// we will always leave it on.  Note that the user could go to
-// a window that forces an orientation that does not use the
-// sensor and in theory we could turn it off... however, when next
-// turning it on we won't have a good value for the current
-// orientation for a little bit, which can cause orientation
-// changes to lag, so we'd like to keep it always on.  (It will
-// still be turned off when the screen is off.)
-return false;
-}
-return true;
-}
+		/*
+		 * We always let the sensor be switched on by default except when
+		 * the user has explicitly disabled sensor based rotation or when the
+		 * screen is switched off.
+		 */
+	boolean needSensorRunningLp() {
+		if (mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR
+				|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+				|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+				|| mCurrentAppOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE) {
+				// If the application has explicitly requested to follow the
+				// orientation, then we need to turn the sensor or.
+			return true;
+		}
+		if ((mCarDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_CAR) ||
+			(mDeskDockEnablesAccelerometer && (mDockMode == Intent.EXTRA_DOCK_STATE_DESK
+				|| mDockMode == Intent.EXTRA_DOCK_STATE_LE_DESK
+				|| mDockMode == Intent.EXTRA_DOCK_STATE_HE_DESK))) {
+				// enable accelerometer if we are docked in a dock that enables accelerometer
+				// orientation management,
+			return true;
+		}
+		if (mAccelerometerDefault == 0) {
+		// If the setting for using the sensor by default is enabled, then
+		// we will always leave it on.  Note that the user could go to
+		// a window that forces an orientation that does not use the
+		// sensor and in theory we could turn it off... however, when next
+		// turning it on we won't have a good value for the current
+		// orientation for a little bit, which can cause orientation
+		// changes to lag, so we'd like to keep it always on.  (It will
+		// still be turned off when the screen is off.)
+				return false;
+			}
+			return true;
+		}
 
-/*
- * Various use cases for invoking this function
- * screen turning off, should always disable listeners if already enabled
- * screen turned on and current app has sensor based orientation, enable listeners 
- * if not already enabled
- * screen turned on and current app does not have sensor orientation, disable listeners if
- * already enabled
- * screen turning on and current app has sensor based orientation, enable listeners if needed
- * screen turning on and current app has nosensor based orientation, do nothing
- */
-void updateOrientationListenerLp() {
-if (!mOrientationListener.canDetectOrientation()) {
-// If sensor is turned off or nonexistent for some reason
-return;
-}
-//Could have been invoked due to screen turning on or off or
-//change of the currently visible window's orientation
-if (localLOGV) Log.v(TAG, "Screen status="+mScreenOnEarly+
-", current orientation="+mCurrentAppOrientation+
-", SensorEnabled="+mOrientationSensorEnabled);
-boolean disable = true;
-if (mScreenOnEarly) {
-if (needSensorRunningLp()) {
-disable = false;
-//enable listener if not already enabled
-if (!mOrientationSensorEnabled) {
-mOrientationListener.enable();
-if(localLOGV) Log.v(TAG, "Enabling listeners");
-mOrientationSensorEnabled = true;
-}
-} 
-} 
-//check if sensors need to be disabled
-if (disable && mOrientationSensorEnabled) {
-mOrientationListener.disable();
-if(localLOGV) Log.v(TAG, "Disabling listeners");
-mOrientationSensorEnabled = false;
-}
-}
+		/*
+		 * Various use cases for invoking this function
+		 * screen turning off, should always disable listeners if already enabled
+		 * screen turned on and current app has sensor based orientation, enable listeners 
+		 * if not already enabled
+		 * screen turned on and current app does not have sensor orientation, disable listeners if
+		 * already enabled
+		 * screen turning on and current app has sensor based orientation, enable listeners if needed
+		 * screen turning on and current app has nosensor based orientation, do nothing
+		 */
+			void updateOrientationListenerLp() {
+				if (!mOrientationListener.canDetectOrientation()) {
+				// If sensor is turned off or nonexistent for some reason
+					return;
+				}
+				//Could have been invoked due to screen turning on or off or
+				//change of the currently visible window's orientation
+				if (localLOGV) Log.v(TAG, "Screen status="+mScreenOnEarly+
+					", current orientation="+mCurrentAppOrientation+
+					", SensorEnabled="+mOrientationSensorEnabled);
+					boolean disable = true;
+					if (mScreenOnEarly) {
+						if (needSensorRunningLp()) {
+							disable = false;
+							//enable listener if not already enabled
+								if (!mOrientationSensorEnabled) {
+										mOrientationListener.enable();
+									if(localLOGV) Log.v(TAG, "Enabling listeners");
+										mOrientationSensorEnabled = true;
+									}
+								} 
+					} 
+					//check if sensors need to be disabled
+				if (disable && mOrientationSensorEnabled) {
+					mOrientationListener.disable();
+					if(localLOGV) Log.v(TAG, "Disabling listeners");
+						mOrientationSensorEnabled = false;
+					}
+				}
 
-private void interceptPowerKeyDown(boolean handled) {
-mPowerKeyHandled = handled;
-if (!handled) {
-mHandler.postDelayed(mPowerLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
-}
-}
+		private void interceptPowerKeyDown(boolean handled) {
+			mPowerKeyHandled = handled;
+				if (!handled) {
+					mHandler.postDelayed(mPowerLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+				}
+		}
 
-private boolean interceptPowerKeyUp(boolean canceled) {
-if (!mPowerKeyHandled) {
-mHandler.removeCallbacks(mPowerLongPress);
-return !canceled;
-}
-return false;
-}
+		private boolean interceptPowerKeyUp(boolean canceled) {
+			if (!mPowerKeyHandled) {
+				mHandler.removeCallbacks(mPowerLongPress);
+				return !canceled;
+			}
+			return false;
+		}
 
-private void cancelPendingPowerKeyAction() {
-if (!mPowerKeyHandled) {
-mHandler.removeCallbacks(mPowerLongPress);
-}
-if (mPowerKeyTriggered) {
-mPendingPowerKeyUpCanceled = true;
-}
-}
+		private void cancelPendingPowerKeyAction() {
+			if (!mPowerKeyHandled) {
+				mHandler.removeCallbacks(mPowerLongPress);
+			}
+			if (mPowerKeyTriggered) {
+				mPendingPowerKeyUpCanceled = true;
+			}
+		}
 
 
-Runnable mTorchOn = new Runnable() {
-public void run() {
-Intent i = new Intent(INTENT_TORCH_ON);
-i.setAction(INTENT_TORCH_ON);
-i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-mContext.startService(i);
-mFastTorchOn = true;
-};
-};
+		Runnable mTorchOn = new Runnable() {
+			public void run() {
+				Intent i = new Intent(INTENT_TORCH_ON);
+						i.setAction(INTENT_TORCH_ON);
+						i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				mContext.startService(i);
+						mFastTorchOn = true;
+			};
+		};
 
-Runnable mTorchOff = new Runnable() {
-public void run() {
-Intent i = new Intent(INTENT_TORCH_OFF);
-i.setAction(INTENT_TORCH_OFF);
-i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-mContext.startService(i);
-mFastTorchOn = false;
-};
-};
-
-private void interceptScreenshotChord() {
-if (mVolumeDownKeyTriggered && mPowerKeyTriggered && !mVolumeUpKeyTriggered) {
-final long now = SystemClock.uptimeMillis();
-if (now <= mVolumeDownKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS
-&& now <= mPowerKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS) {
-mVolumeDownKeyConsumedByScreenshotChord = true;
-cancelPendingPowerKeyAction();
-
-mHandler.postDelayed(mScreenshotChordLongPress,
-ViewConfiguration.getGlobalActionKeyTimeout());
-}
-}
-}
-
-private void cancelPendingScreenshotChordAction() {
-mHandler.removeCallbacks(mScreenshotChordLongPress);
-}
-
-private final Runnable mPowerLongPress = new Runnable() {
-public void run() {
-// The context isn't read
-if (mLongPressOnPowerBehavior < 0) {
-mLongPressOnPowerBehavior = mContext.getResources().getInteger(
-com.android.internal.R.integer.config_longPressOnPowerBehavior);
-}
-switch (mLongPressOnPowerBehavior) {
-case LONG_PRESS_POWER_NOTHING:
-break;
-case LONG_PRESS_POWER_GLOBAL_ACTIONS:
-mPowerKeyHandled = true;
-performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
-sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
-showGlobalActionsDialog();
-break;
-case LONG_PRESS_POWER_SHUT_OFF:
-mPowerKeyHandled = true;
-performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
-sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
-ShutdownThread.shutdown(mContext, true);
-break;
-}
-}
-};
-
-private final Runnable mScreenshotChordLongPress = new Runnable() {
-public void run() {
-takeScreenshot();
-}
-};
-
-void showGlobalActionsDialog() {
-if (mGlobalActions == null) {
-mGlobalActions = new GlobalActions(mContext);
-}
-final boolean keyguardShowing = mKeyguardMediator.isShowingAndNotHidden();
-mGlobalActions.showDialog(keyguardShowing, isDeviceProvisioned());
-if (keyguardShowing) {
-// since it took two seconds of long press to bring this up,
-// poke the wake lock so they have some time to see the dialog.
-mKeyguardMediator.pokeWakelock();
-}
-}
-
-boolean isDeviceProvisioned() {
-return Settings.Secure.getInt(
-mContext.getContentResolver(), Settings.Secure.DEVICE_PROVISIONED, 0) != 0;
-}
-
-private void handleLongPressOnHome() {
-// We can't initialize this in init() since the configuration hasn't been loaded yet.
-if (mLongPressOnHomeBehavior < 0) {
-mLongPressOnHomeBehavior
-= mContext.getResources().getInteger(R.integer.config_longPressOnHomeBehavior);
-if (mLongPressOnHomeBehavior < LONG_PRESS_HOME_NOTHING ||
-mLongPressOnHomeBehavior > LONG_PRESS_HOME_RECENT_SYSTEM_UI) {
-mLongPressOnHomeBehavior = LONG_PRESS_HOME_NOTHING;
-}
-}
-
-if (mLongPressOnHomeBehavior != LONG_PRESS_HOME_NOTHING) {
-performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
-sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
-
-// Eat the longpress so it won't dismiss the recent apps dialog when
-// the user lets go of the home key
-mHomePressed = false;
-}
-
-if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_DIALOG) {
-showOrHideRecentAppsDialog(RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS);
-} else if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_SYSTEM_UI) {
-try {
-mStatusBarService.toggleRecentApps();
-} catch (RemoteException e) {
-Slog.e(TAG, "RemoteException when showing recent apps", e);
-}
-}
-}
+		Runnable mTorchOff = new Runnable() {
+			public void run() {
+				Intent i = new Intent(INTENT_TORCH_OFF);
+						i.setAction(INTENT_TORCH_OFF);
+						i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				mContext.startService(i);
+						mFastTorchOn = false;
+			};
+		};
 
 /**
- * Create (if necessary) and show or dismiss the recent apps dialog according
- * according to the requested behavior.
+ * When a volumeup-key longpress expires, skip songs based on key press
  */
-void showOrHideRecentAppsDialog(final int behavior) {
-mHandler.post(new Runnable() {
-@Override
+Runnable mVolumeUpLongPress = new Runnable() {
 public void run() {
-if (mRecentAppsDialog == null) {
-mRecentAppsDialog = new RecentApplicationsDialog(mContext);
-}
-if (mRecentAppsDialog.isShowing()) {
-switch (behavior) {
-case RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS:
-mRecentAppsDialog.dismiss();
-break;
-case RECENT_APPS_BEHAVIOR_DISMISS_AND_SWITCH:
-mRecentAppsDialog.dismissAndSwitch();
-break;
-case RECENT_APPS_BEHAVIOR_EXIT_TOUCH_MODE_AND_SHOW:
-default:
-break;
-}
-} else {
-switch (behavior) {
-case RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS:
-mRecentAppsDialog.show();
-break;
-case RECENT_APPS_BEHAVIOR_EXIT_TOUCH_MODE_AND_SHOW:
-try {
-mWindowManager.setInTouchMode(false);
-} catch (RemoteException e) {
-}
-mRecentAppsDialog.show();
-break;
-case RECENT_APPS_BEHAVIOR_DISMISS_AND_SWITCH:
-default:
-break;
-}
-}
-}
-});
+// set the long press flag to true
+mIsLongPress = true;
+
+// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
+sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
+};
+};
+
+/**
+ * When a volumedown-key longpress expires, skip songs based on key press
+ */
+Runnable mVolumeDownLongPress = new Runnable() {
+public void run() {
+// set the long press flag to true
+mIsLongPress = true;
+
+// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
+sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+};
+};
+
+private void sendMediaButtonEvent(int code) {
+long eventtime = SystemClock.uptimeMillis();
+
+Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0);
+downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+mContext.sendOrderedBroadcast(downIntent, null);
+
+Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, code, 0);
+upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+mContext.sendOrderedBroadcast(upIntent, null);
 }
 
-/** {@inheritDoc} */
-public void init(Context context, IWindowManager windowManager,
-WindowManagerFuncs windowManagerFuncs,
+void handleVolumeLongPress(int keycode) {
+Runnable btnHandler;
+if (keycode == KeyEvent.KEYCODE_VOLUME_UP) {
+btnHandler = mVolumeUpLongPress;
+} else {
+btnHandler = mVolumeDownLongPress;
+}
+mHandler.postDelayed(btnHandler, ViewConfiguration.getLongPressTimeout());
+}
+
+void handleVolumeLongPressAbort() {
+mHandler.removeCallbacks(mVolumeUpLongPress);
+mHandler.removeCallbacks(mVolumeDownLongPress);
+}
+
+
+		private void interceptScreenshotChord() {
+			if (mVolumeDownKeyTriggered && mPowerKeyTriggered && !mVolumeUpKeyTriggered) {
+				final long now = SystemClock.uptimeMillis();
+				if (now <= mVolumeDownKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS
+								&& now <= mPowerKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS) {
+								mVolumeDownKeyConsumedByScreenshotChord = true;
+					cancelPendingPowerKeyAction();
+
+					mHandler.postDelayed(mScreenshotChordLongPress,
+					ViewConfiguration.getGlobalActionKeyTimeout());
+				}
+			}
+		}
+
+		private void cancelPendingScreenshotChordAction() {
+			mHandler.removeCallbacks(mScreenshotChordLongPress);
+		}
+
+		private final Runnable mPowerLongPress = new Runnable() {
+			public void run() {
+			// The context isn't read
+				if (mLongPressOnPowerBehavior < 0) {
+					mLongPressOnPowerBehavior = mContext.getResources().getInteger(
+					com.android.internal.R.integer.config_longPressOnPowerBehavior);
+				}
+				switch (mLongPressOnPowerBehavior) {
+				case LONG_PRESS_POWER_NOTHING:
+				break;
+				case LONG_PRESS_POWER_GLOBAL_ACTIONS:
+						mPowerKeyHandled = true;
+						performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+						sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+						showGlobalActionsDialog();
+				break;
+				case LONG_PRESS_POWER_SHUT_OFF:
+						mPowerKeyHandled = true;
+						performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+						sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+						ShutdownThread.shutdown(mContext, true);
+				break;
+				}		
+			}
+		};
+
+		private final Runnable mScreenshotChordLongPress = new Runnable() {
+			public void run() {
+				takeScreenshot();
+			}
+		};
+
+		void showGlobalActionsDialog() {
+			if (mGlobalActions == null) {
+				mGlobalActions = new GlobalActions(mContext);
+			}
+			final boolean keyguardShowing = mKeyguardMediator.isShowingAndNotHidden();
+			mGlobalActions.showDialog(keyguardShowing, isDeviceProvisioned());
+				if (keyguardShowing) {
+					// since it took two seconds of long press to bring this up,
+					// poke the wake lock so they have some time to see the dialog.
+					mKeyguardMediator.pokeWakelock();
+				}
+		}
+
+		boolean isDeviceProvisioned() {
+			return Settings.Secure.getInt(
+				mContext.getContentResolver(), Settings.Secure.DEVICE_PROVISIONED, 0) != 0;
+		}
+
+		private void handleLongPressOnHome() {
+			// We can't initialize this in init() since the configuration hasn't been loaded yet.
+			if (mLongPressOnHomeBehavior < 0) {
+				mLongPressOnHomeBehavior
+							= mContext.getResources().getInteger(R.integer.config_longPressOnHomeBehavior);
+				if (mLongPressOnHomeBehavior < LONG_PRESS_HOME_NOTHING ||
+					mLongPressOnHomeBehavior > LONG_PRESS_HOME_RECENT_SYSTEM_UI) {
+					mLongPressOnHomeBehavior = LONG_PRESS_HOME_NOTHING;
+				}
+			}
+
+			if (mLongPressOnHomeBehavior != LONG_PRESS_HOME_NOTHING) {
+				performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+				sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
+
+				// Eat the longpress so it won't dismiss the recent apps dialog when
+				// the user lets go of the home key
+				mHomePressed = false;
+			}
+
+			if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_DIALOG) {
+				showOrHideRecentAppsDialog(RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS);
+			} else if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_SYSTEM_UI) {
+				try {
+					mStatusBarService.toggleRecentApps();
+				} catch (RemoteException e) {
+					Slog.e(TAG, "RemoteException when showing recent apps", e);
+			}
+			}
+		}
+
+   /**
+	* Create (if necessary) and show or dismiss the recent apps dialog according
+	* according to the requested behavior.
+	*/
+	void showOrHideRecentAppsDialog(final int behavior) {
+		mHandler.post(new Runnable() {
+		@Override
+		public void run() {
+			if (mRecentAppsDialog == null) {
+				mRecentAppsDialog = new RecentApplicationsDialog(mContext);
+			}
+			if (mRecentAppsDialog.isShowing()) {
+				switch (behavior) {
+				case RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS:
+					mRecentAppsDialog.dismiss();
+				break;
+				case RECENT_APPS_BEHAVIOR_DISMISS_AND_SWITCH:
+					mRecentAppsDialog.dismissAndSwitch();
+					break;
+				case RECENT_APPS_BEHAVIOR_EXIT_TOUCH_MODE_AND_SHOW:
+				default:
+				break;
+				}
+			} else {
+					switch (behavior) {
+						case RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS:
+						mRecentAppsDialog.show();
+						break;
+						case RECENT_APPS_BEHAVIOR_EXIT_TOUCH_MODE_AND_SHOW:
+							try {
+								mWindowManager.setInTouchMode(false);
+							} catch (RemoteException e) {
+						}
+						mRecentAppsDialog.show();
+						break;
+						case RECENT_APPS_BEHAVIOR_DISMISS_AND_SWITCH:
+						default:
+						break;
+					}
+				}
+			}
+		});
+	}
+
+	/** {@inheritDoc} */
+	public void init(Context context, IWindowManager windowManager,
+		WindowManagerFuncs windowManagerFuncs,
 LocalPowerManager powerManager) {
 mContext = context;
 mWindowManager = windowManager;
@@ -970,6 +1037,10 @@ Settings.System.END_BUTTON_BEHAVIOR_DEFAULT);
 mIncallPowerBehavior = Settings.Secure.getInt(resolver,
 Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR,
 Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR_DEFAULT);
+mVolumeWakeScreen = (Settings.System.getInt(resolver,
+ Settings.System.VOLUME_WAKE_SCREEN, 0) == 1);
+mVolBtnMusicControls = (Settings.System.getInt(resolver,
+Settings.System.VOLBTN_MUSIC_CONTROLS, 1) == 1);
 int accelerometerDefault = Settings.System.getInt(resolver,
 Settings.System.ACCELEROMETER_ROTATION, DEFAULT_ACCELEROMETER_ROTATION);
 
@@ -2756,7 +2827,7 @@ mHandler.postDelayed(mScreenshotTimeout, 10000);
 public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags, boolean isScreenOn) {
 final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
 final boolean canceled = event.isCanceled();
-final int keyCode = event.getKeyCode();
+int keyCode = event.getKeyCode();
 
 final boolean isInjected = (policyFlags & WindowManagerPolicy.FLAG_INJECTED) != 0;
 
@@ -2800,22 +2871,55 @@ result = ACTION_PASS_TO_USER;
 // to wake the device but don't pass the key to the application.
 result = 0;
 
-final boolean isWakeKey = (policyFlags
-& (WindowManagerPolicy.FLAG_WAKE | WindowManagerPolicy.FLAG_WAKE_DROPPED)) != 0;
-if (down && isWakeKey) {
-if (keyguardActive) {
-// If the keyguard is showing, let it decide what to do with the wake key.
-mKeyguardMediator.onWakeKeyWhenKeyguardShowingTq(keyCode,
-mDockMode != Intent.EXTRA_DOCK_STATE_UNDOCKED);
-} else {
-// Otherwise, wake the device ourselves.
-result |= ACTION_POKE_USER_ACTIVITY;
-}
-}
-}
+	final boolean isWakeKey = (policyFlags
+			& (WindowManagerPolicy.FLAG_WAKE | WindowManagerPolicy.FLAG_WAKE_DROPPED)) != 0
+			|| (((keyCode == KeyEvent.KEYCODE_VOLUME_UP) || (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN))
+					&& mVolumeWakeScreen && !isScreenOn);
+
+		if (down && isWakeKey) {
+			if (keyguardActive) {
+				// If the keyguard is showing, let it decide what to do with the wake key.
+				mKeyguardMediator.onWakeKeyWhenKeyguardShowingTq(keyCode,
+				mDockMode != Intent.EXTRA_DOCK_STATE_UNDOCKED);
+			} else {
+				// Otherwise, wake the device ourselves.
+				result |= ACTION_POKE_USER_ACTIVITY;
+			}
+		}
+	}
 
 // Handle special keys.
 switch (keyCode) {
+case KeyEvent.KEYCODE_ENDCALL: {
+result &= ~ACTION_PASS_TO_USER;
+if (down) {
+ITelephony telephonyService = getTelephonyService();
+boolean hungUp = false;
+if (telephonyService != null) {
+try {
+hungUp = telephonyService.endCall();
+} catch (RemoteException ex) {
+Log.w(TAG, "ITelephony threw RemoteException", ex);
+}
+}
+interceptPowerKeyDown(!isScreenOn || hungUp);
+} else {
+if (interceptPowerKeyUp(canceled)) {
+if ((mEndcallBehavior
+& Settings.System.END_BUTTON_BEHAVIOR_HOME) != 0) {
+if (goHome()) {
+break;
+}
+}
+if ((mEndcallBehavior
+& Settings.System.END_BUTTON_BEHAVIOR_SLEEP) != 0) {
+result = (result & ~ACTION_POKE_USER_ACTIVITY) | ACTION_GO_TO_SLEEP;
+}
+}
+}
+break;
+}
+
 case KeyEvent.KEYCODE_VOLUME_DOWN:
 case KeyEvent.KEYCODE_VOLUME_UP:
 case KeyEvent.KEYCODE_VOLUME_MUTE: {
@@ -2889,44 +2993,29 @@ Log.w(TAG, "ITelephony threw RemoteException", ex);
 }
 }
 
+}
 if (isMusicActive() && (result & ACTION_PASS_TO_USER) == 0) {
-// If music is playing but we decided not to pass the key to the
-// application, handle the volume change here.
-handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
+if (mVolBtnMusicControls && down && (keyCode != KeyEvent.KEYCODE_VOLUME_MUTE)) {
+mIsLongPress = false;
+handleVolumeLongPress(keyCode);
 break;
-}
-}
-break;
-}
-
-case KeyEvent.KEYCODE_ENDCALL: {
-result &= ~ACTION_PASS_TO_USER;
-if (down) {
-ITelephony telephonyService = getTelephonyService();
-boolean hungUp = false;
-if (telephonyService != null) {
-try {
-hungUp = telephonyService.endCall();
-} catch (RemoteException ex) {
-Log.w(TAG, "ITelephony threw RemoteException", ex);
-}
-}
-interceptPowerKeyDown(!isScreenOn || hungUp);
 } else {
-if (interceptPowerKeyUp(canceled)) {
-if ((mEndcallBehavior
-& Settings.System.END_BUTTON_BEHAVIOR_HOME) != 0) {
-if (goHome()) {
+if (mVolBtnMusicControls && !down) {
+handleVolumeLongPressAbort();
+if (mIsLongPress) {
 break;
 }
 }
-if ((mEndcallBehavior
-& Settings.System.END_BUTTON_BEHAVIOR_SLEEP) != 0) {
-result = (result & ~ACTION_POKE_USER_ACTIVITY) | ACTION_GO_TO_SLEEP;
+handleVolumeKey(AudioManager.STREAM_MUSIC, keyCode);
 }
 }
-}
+if (isScreenOn || !mVolumeWakeScreen) {
 break;
+} else if (keyguardActive) {
+keyCode = KeyEvent.KEYCODE_POWER;
+mKeyguardMediator.onWakeKeyWhenKeyguardShowingTq(keyCode,
+mDockMode != Intent.EXTRA_DOCK_STATE_UNDOCKED);
+}
 }
 
 case KeyEvent.KEYCODE_POWER: {

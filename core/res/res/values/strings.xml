@@ -3430,6 +3430,11 @@
     <!-- STK setup Call -->
     <string name="SetupCallDefault">Accept Call?</string>
     
+    <!-- string for Phone tab on 4tab -->
+    <string name="zzlockscreen_phone_label">Phone</string>
+    <!-- string for custom app tab on 4tab -->
+    <string name="zzlockscreen_custom_label">Custom</string>
+    
     
 
 </resources>

@@ -2182,7 +2182,14 @@ public final class Settings {
         public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
 		
 		public static final String USE_CUSTOM_CARRIER_COLOR = "use_custom_carrier_color";
-        
+		
+		/**
+		 * Whether to wake the screen with the volume keys, the value is boolean.
+         * @hide
+		 */
+		public static final String VOLUME_WAKE_SCREEN = "volume_wake_screen";
+		 
+		 
         /**
          * Whether or not volume button music controls should be enabled to seek media tracks
          * @hide
@@ -2240,6 +2247,14 @@ public final class Settings {
 		"lockscreen_custom_app_activity_3",
 		"lockscreen_custom_app_activity_4"
         };		
+		
+		/**
+		 * Unlock rotary by dragging down
+		 *
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_ROTARY_UNLOCK_DOWN = "lockscreen_rotary_unlock_down";
+		 
 		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings

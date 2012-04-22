@@ -2181,7 +2181,33 @@ public final class Settings {
          */
         public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
 		
+		/**
+		 * Carrier Color Selection
+		 *
+		 * @hide
+		 */
 		public static final String USE_CUSTOM_CARRIER_COLOR = "use_custom_carrier_color";
+		
+		/**
+		 * How long to keep the notification LED on (in milliseconds)
+		 *
+		 * @hide
+		 */
+		public static final String NOTIFICATION_LIGHT_ON = "notification_light_on";
+		
+		/**
+		 * How long to keep the notification LED off (in milliseconds)
+		 *
+		 * @hide
+		 */
+		public static final String NOTIFICATION_LIGHT_OFF = "notification_light_off";
+		
+		/**
+		 * Color picker for the notification LED Light
+		 * @hide
+		 */
+		public static final String NOTIFICATION_LIGHT_COLOR = "notification_light_color";
+		
 		
 		/**
 		 * Whether to wake the screen with the volume keys, the value is boolean.

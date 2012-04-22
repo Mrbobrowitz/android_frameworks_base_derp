@@ -1,17 +1,12 @@
 package com.android.systemui;
 
-
-
 import android.content.Context;
 import android.content.Intent;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.util.Log;
 
-
 import android.content.SharedPreferences;
-
-
 
 public class TorchService extends IntentService {
 	

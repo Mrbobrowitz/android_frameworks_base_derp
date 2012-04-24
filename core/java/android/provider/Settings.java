@@ -2254,6 +2254,13 @@ public final class Settings {
          */
         public static final String LOCKSCREEN_TYPE = "lockscreen_type";
 		
+		/**
+		 * Whether to allow the device to use landscape lockscreen layouts
+		 *
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_LANDSCAPE = "lockscreen_landscape";
+		
         /**
          * Hide those stupid arrows
          * 

@@ -131,7 +131,6 @@
             android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin"
         />
 
-
     <Space android:layout_gravity="fill" 
            android:layout_width="wrap_content"
            android:layout_height="wrap_content"/>
@@ -151,9 +150,9 @@
         android:visibility="gone"
         />
 
-        <com.android.internal.widget.RingSelector
+        <com.android.internal.widget.SenseLikeLock
             android:id="@+id/unlock_widget"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_alignParentBottom="true"
@@ -203,9 +202,9 @@
         android:layout_column="0"
         android:layout_rowSpan="4"
         android:layout_columnSpan="1"
-        android:layout_gravity="top"
-        android:layout_width="fill_parent"
-        android:layout_height="265dp"
+        android:layout_gravity="fill"
+        android:layout_width="0dip"
+        android:layout_height="0dip"
         />
 
     </RelativeLayout>

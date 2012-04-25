@@ -157,16 +157,16 @@
 
     </LinearLayout>
 
-    <!-- Music transport control -->
+   <!-- Music transport control -->
     <include android:id="@+id/transport"
         layout="@layout/keyguard_transport_control"
         android:layout_row="0"
         android:layout_column="0"
         android:layout_rowSpan="4"
         android:layout_columnSpan="1"
-        android:layout_gravity="fill"
-        android:layout_width="0dip"
-        android:layout_height="0dip"
+        android:layout_gravity="top"
+        android:layout_width="fill_parent"
+        android:layout_height="265dp"
         />
 
     <!-- Area to overlay FaceLock -->

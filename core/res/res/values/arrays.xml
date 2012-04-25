@@ -515,7 +515,9 @@
         <item>@drawable/ic_lockscreen_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@drawable/ic_lockscreen_camera</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>
@@ -525,7 +527,9 @@
         <item>@string/description_target_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@string/description_target_camera</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>
@@ -550,7 +554,9 @@
         <item>@drawable/ic_lockscreen_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@drawable/ic_lockscreen_silent</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>
@@ -559,7 +565,9 @@
         <item>@string/description_target_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@string/description_target_silent</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>
@@ -568,7 +576,9 @@
         <item>@drawable/ic_lockscreen_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@drawable/ic_lockscreen_soundon</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>
@@ -577,7 +587,9 @@
         <item>@string/description_target_unlock</item>
         <item>@null</item>
         <item>@null</item>
+        <item>@null</item>
         <item>@string/description_target_soundon</item>
+        <item>@null</item>
         <item>@null</item>
         <item>@null</item>
     </array>

@@ -17,6 +17,7 @@
 package com.android.internal.policy.impl;
 
 import com.android.internal.R;
+import com.android.internal.widget.DigitalClock;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.RotarySelector;
 import com.android.internal.widget.RingSelector;
@@ -28,6 +29,7 @@ import com.android.internal.widget.multiwaveview.MultiWaveView;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -54,6 +56,10 @@ import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.database.ContentObserver;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -70,14 +76,17 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	// until the screen
 	// is on
 	private static final boolean DBG = false;
+	private static final boolean DEBUG = DBG;
 	private static final String TAG = "LockScreen";
 	private static final String ENABLE_MENU_KEY_FILE = "/data/local/enable_menu_key";
 	private static final int WAIT_FOR_ANIMATION_TIMEOUT = 0;
 	private static final int STAY_ON_WHILE_GRABBED_TIMEOUT = 30000;
+	private static final int COLOR_WHITE = 0xFFFFFFFF;
 	
 	private LockPatternUtils mLockPatternUtils;
 	private KeyguardUpdateMonitor mUpdateMonitor;
 	private KeyguardScreenCallback mCallback;
+	
 	
 	// current configuration state of keyboard and display
 	private int mKeyboardHidden;
@@ -92,6 +101,11 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	private UnlockWidgetCommonMethods mUnlockWidgetMethods2;
 	private View mUnlockWidget;
 	private View mUnlockWidget2;
+	
+	// to allow coloring of lockscreen texts
+	private TextView mCarrier;
+	private DigitalClock mDigitalClock;
+
 	
 	// lockscreen toggles
 	private boolean mLockscreenCustom = (Settings.System.getInt(
@@ -133,8 +147,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	private String mCustomTwo = (Settings.System.getString(
 														   mContext.getContentResolver(),
 														   Settings.System.LOCKSCREEN_CUSTOM_TWO));
+	private String mCustomThree = (Settings.System.getString(
+														   mContext.getContentResolver(),
+														   Settings.System.LOCKSCREEN_CUSTOM_THREE));
 	private Drawable customAppIcon1;
 	private Drawable customAppIcon2;
+	private Drawable customAppIcon3;
 	
 	// hide rotary arrows
 	private boolean mHideArrows = (Settings.System.getInt(
@@ -477,18 +495,11 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			if (mLockscreenCustom) {
 				if (target == 0) { // 0 = unlock on the right
 					mCallback.goToUnlockScreen();
-				} else if (target == 1) { // 1 = Custom App, default mms
+				} else if (target == 1) { // 1 = Custom App, no default
 					String isCustom = Settings.System.getString(
 																mContext.getContentResolver(),
 																Settings.System.LOCKSCREEN_CUSTOM_ONE);
-					if (isCustom == null) {
-						Intent customMms = new Intent(Intent.ACTION_MAIN);
-						customMms.setClassName("com.android.mms",
-											   "com.android.mms.ui.ConversationList");
-						customMms.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						mContext.startActivity(customMms);
-						mCallback.goToUnlockScreen();
-					} else {
+					if (isCustom != null) {
 						Intent customOne;
 						try {
 							customOne = Intent.parseUri(isCustom, 0);
@@ -498,19 +509,11 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 						} catch (URISyntaxException e) {
 						}
 					}
-				} else if (target == 2) { // 2 = Custom App, default to phone
+				} else if (target == 2) { // 2 = Custom App, no default set to null
 					String isCustom = Settings.System.getString(
 																mContext.getContentResolver(),
 																Settings.System.LOCKSCREEN_CUSTOM_TWO);
-					if (isCustom == null) {
-						Intent customPhone = new Intent(Intent.ACTION_MAIN);
-						customPhone
-						.setClassName("com.android.contacts",
-									  "com.android.contacts.activities.DialtactsActivity");
-						customPhone.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						mContext.startActivity(customPhone);
-						mCallback.goToUnlockScreen();
-					} else {
+					if (isCustom != null) {
 						Intent customTwo;
 						try {
 							customTwo = Intent.parseUri(isCustom, 0);
@@ -520,7 +523,21 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 						} catch (URISyntaxException e) {
 						}
 					}
-				} else if (target == 3) {
+				} else if (target == 3) { // 3 = Custom App, no default, shows blank when not used
+					String isCustom = Settings.System.getString(
+																mContext.getContentResolver(),
+																Settings.System.LOCKSCREEN_CUSTOM_THREE);
+					if (isCustom != null) {
+						Intent customThree;
+						try {
+							customThree = Intent.parseUri(isCustom, 0);
+							customThree.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+							mContext.startActivity(customThree);
+							mCallback.goToUnlockScreen();
+						} catch (URISyntaxException e) {
+						}
+					}
+					} else if (target == 4) { //4 = Camera/Sound toggle
 					if (!mCameraDisabled) {
 						// Start the Camera
 						Intent intent = new Intent(
@@ -912,7 +929,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	private Drawable[] getDrawIcons(int resId) {
 		Resources res = getContext().getResources();
 		TypedArray array = res.obtainTypedArray(resId);
-		Drawable[] icons = new Drawable[6];
+		Drawable[] icons = new Drawable[8];
 		// i really need to make this better one day....
 		Drawable d0 = array.getDrawable(0);
 		icons[0] = d0;
@@ -929,7 +946,13 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			Drawable d2 = array.getDrawable(2);
 			icons[2] = d2;
 		}
-		for (int i = 3; i < 6; i++) {
+		if (customAppIcon3 != null) {
+			icons[3] = customAppIcon3;
+		} else {
+			Drawable d3 = array.getDrawable(3);
+			icons[3] = d3;
+		}
+		for (int i = 4; i < 8; i++) {
 			Drawable d = array.getDrawable(i);
 			icons[i] = d;
 		}
@@ -964,6 +987,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 		mCreationOrientation = configuration.orientation;
 		
 		mKeyboardHidden = configuration.hardKeyboardHidden;
+		
+		SettingsObserver settingsObserver = new SettingsObserver(new Handler());
+        settingsObserver.observe();
 		
 		if (mCustomAppIcon == null)
 			mCustomAppIcon = BitmapFactory.decodeResource(getContext()
@@ -1032,6 +1058,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 		
 		mUnlockWidget = findViewById(R.id.unlock_widget);
 		mUnlockWidget2 = findViewById(R.id.unlock_widget2);
+		
+		mDigitalClock = (DigitalClock) findViewById(R.id.time);
+        mCarrier = (TextView) findViewById(R.id.carrier);
 		
 		if (mUnlockWidget instanceof SlidingTab) {
 			SlidingTab slidingTabView = (SlidingTab) mUnlockWidget;
@@ -1127,6 +1156,22 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 				    	Log.e(TAG, "NameNotFoundException: " + mCustomTwo);
 				    } catch (URISyntaxException e) {
 				    	Log.e(TAG, "URISyntaxException: " + mCustomTwo);
+				    }
+				}
+				if (mCustomThree != null) {
+					try {
+						Intent i = Intent.parseUri(mCustomThree, 0);
+						Drawable d = pm.getActivityIcon(i);
+						Bitmap bit = ((BitmapDrawable) d).getBitmap();
+						Bitmap bitIcon = Bitmap.createScaledBitmap(bit,
+																   (int) (density * iconSize),
+																   (int) (density * iconSize), true);
+						customAppIcon3 = new BitmapDrawable(context.getResources(),
+															bitIcon);
+				    } catch (PackageManager.NameNotFoundException e) {
+				    	Log.e(TAG, "NameNotFoundException: " + mCustomThree);
+				    } catch (URISyntaxException e) {
+				    	Log.e(TAG, "URISyntaxException: " + mCustomThree);
 				    }
 				}
 			}
@@ -1258,6 +1303,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	public void onPause() {
 		mStatusViewManager.onPause();
 		mUnlockWidgetMethods.reset(false);
+		// update the settings when we pause
+        if (DEBUG) Log.d(TAG, "We are pausing and want to update settings");
+        updateSettings();
 	}
 	
 	private final Runnable mOnResumePing = new Runnable() {
@@ -1270,6 +1318,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 public void onResume() {
 mStatusViewManager.onResume();
 postDelayed(mOnResumePing, ON_RESUME_PING_DELAY);
+// update the settings when we pause
+if (DEBUG) Log.d(TAG, "We are pausing and want to update settings");
+updateSettings();
 }
 
 /** {@inheritDoc} */
@@ -1290,6 +1341,43 @@ mUnlockWidgetMethods.updateResources();
 }
 
 public void onPhoneStateChanged(String newState) {
+}
+
+class SettingsObserver extends ContentObserver {
+	SettingsObserver(Handler handler) {
+		super(handler);
+	}
+	
+	void observe() {
+		ContentResolver resolver = mContext.getContentResolver();
+		resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR),
+										 false, this);
+		updateSettings();
+	}
+}
+
+protected void updateSettings() {
+if (DEBUG) Log.d(TAG, "Settings for lockscreen have changed lets update");
+ContentResolver resolver = mContext.getContentResolver();
+
+int mLockscreenColor = Settings.System.getInt(resolver,
+Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR, COLOR_WHITE);
+
+// XXX: UPDATE COLORS each could throw a null pointer so watch your ass
+// digital clock first (see @link com.android.internal.widget.DigitalClock.updateTime())
+try {
+mDigitalClock.updateTime();
+} catch (NullPointerException npe) {
+if (DEBUG) Log.d(TAG, "date update time failed: NullPointerException");
+}
+
+// then the rest (see @link com.android.internal.policy.impl.KeyguardStatusViewManager.updateColors())
+try {
+mStatusViewManager.updateColors(); 
+} catch (NullPointerException npe) {
+if (DEBUG) Log.d(TAG, "KeyguardStatusViewManager.updateColors() failed: NullPointerException");
+}
 }
 
 public class FastBitmapDrawable extends Drawable {
@@ -1359,5 +1447,4 @@ public class FastBitmapDrawable extends Drawable {
 		return mBitmap;
 	}
 }
-
 }

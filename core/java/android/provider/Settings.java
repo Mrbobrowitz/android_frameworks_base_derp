@@ -2248,16 +2248,23 @@ public final class Settings {
         public static final String LOCKSCREEN_CUSTOM_TWO = "lockscreen_custom_two";
 		
 		/**
-         * Lockscreen custom app two
+         * Lockscreen custom app three
          * @hide
          */
         public static final String LOCKSCREEN_CUSTOM_THREE = "lockscreen_custom_three";
 		
 		/**
-         * Lockscreen custom app two
+         * Lockscreen custom app four
          * @hide
          */
         public static final String LOCKSCREEN_CUSTOM_FOUR = "lockscreen_custom_four";
+		
+		
+		/**
+         * Lockscreen custom text color
+         * @hide
+         */
+        public static final String LOCKSCREEN_CUSTOM_TEXT_COLOR = "lockscreen_custom_text_color";
 		
 		/**
          * Lock Screen Picker!

@@ -59,6 +59,7 @@ class KeyguardStatusViewManager implements OnClickListener {
     private static final int HELP_MESSAGE_TEXT = 13;
     private static final int OWNER_INFO = 14;
     private static final int BATTERY_INFO = 15;
+	private static final int COLOR_WHITE = 0xFFFFFFFF;
 
     private StatusMode mStatus;
     private String mDateFormatString;
@@ -681,12 +682,10 @@ class KeyguardStatusViewManager implements OnClickListener {
     }
 
 	public void updateColors() {
-		int white = 16777215;
 		if (DEBUG) Log.d(TAG, "Lets update the colors");
 			ContentResolver resolver = getContext().getContentResolver();
 		int color = Settings.System.getInt(resolver,
-				Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR, white);
-		// XXX: EACH CAN THROW NULL POINTER SO WATCH YOUR ASS
+				Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR, COLOR_WHITE);
 
 		// carrier view
 		try {

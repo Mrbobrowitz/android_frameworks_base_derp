@@ -965,6 +965,7 @@ String s = "";
 try {
 s = mTargetDescriptions.get(index);
 } catch (IndexOutOfBoundsException e) {
+} catch (Exception e) {
 }
 return s;
 }
@@ -978,7 +979,12 @@ Log.w(TAG, "The number of target drawables must be"
 return null;
 }
 }
-return mDirectionDescriptions.get(index);
+try {
+String desc = mDirectionDescriptions.get(index);
+return desc;
+} catch (Exception e) {
+return "";
+}
 }
 
 

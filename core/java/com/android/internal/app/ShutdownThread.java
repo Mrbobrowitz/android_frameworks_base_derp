@@ -30,6 +30,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
+import android.os.IPowerManager;
+import android.os.IBinder;
+
 import android.os.Power;
 import android.os.PowerManager;
 import android.os.RemoteException;
@@ -62,6 +65,7 @@ public final class ShutdownThread extends Thread {
     private static boolean sIsStarted = false;
     
     private static boolean mReboot;
+	private static boolean mRestart;
     private static String mRebootReason;
 	
     // Provides shutdown assurance in case the system_server is killed
@@ -105,8 +109,6 @@ public final class ShutdownThread extends Thread {
 		? com.android.internal.R.string.shutdown_confirm_question
 		: com.android.internal.R.string.shutdown_confirm;
 		
-		Log.d(TAG, "Notifying thread to start shutdown longPressBehavior=" + longPressBehavior);
-		
         if (confirm) {
             final AlertDialog dialog;
             // Set different dialog message based on whether or not we're rebooting
@@ -127,6 +129,9 @@ public final class ShutdownThread extends Thread {
 				.setPositiveButton(com.android.internal.R.string.yes, new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						mReboot = true;
+						if (mRebootReason != null && mRebootReason.equals("restart")) {
+							mRestart = true;
+						}
 						beginShutdownSequence(context);
 					}
 				})
@@ -214,8 +219,13 @@ public final class ShutdownThread extends Thread {
 		// shutting down.
         ProgressDialog pd = new ProgressDialog(context);
         if (mReboot) {
-				pd.setTitle(context.getText(com.android.internal.R.string.reboot_system));
-				pd.setMessage(context.getText(com.android.internal.R.string.reboot_progress));
+				if (mRestart) {
+					pd.setTitle(context.getText(com.android.internal.R.string.restart_title));
+					pd.setMessage(context.getText(com.android.internal.R.string.restart_progress));
+				} else {
+					pd.setTitle(context.getText(com.android.internal.R.string.reboot_system));
+					pd.setMessage(context.getText(com.android.internal.R.string.reboot_progress));
+				}
 			} else {
             pd.setTitle(context.getText(com.android.internal.R.string.power_off));
             pd.setMessage(context.getText(com.android.internal.R.string.shutdown_progress));
@@ -283,11 +293,13 @@ public final class ShutdownThread extends Thread {
             }
         };
 		
-/*
- * Write a system property in case the system_server reboots before we
- * get to the actual hardware restart. If that happens, we'll retry at
- * the beginning of the SystemServer startup.
- */
+		
+	if (!mRestart) { 	
+	/*
+	 * Write a system property in case the system_server reboots before we
+	 * get to the actual hardware restart. If that happens, we'll retry at
+	 * the beginning of the SystemServer startup.
+	 */
 		{
 			String reason = (mReboot ? "1" : "0") + (mRebootReason != null ? mRebootReason : "");
 			SystemProperties.set(SHUTDOWN_ACTION_PROPERTY, reason);
@@ -311,7 +323,7 @@ public final class ShutdownThread extends Thread {
 				try {
 					mActionDoneSync.wait(delay);
 				} catch (InterruptedException e) {
-				}
+				}   }
 			}
         }
         
@@ -435,6 +447,20 @@ public final class ShutdownThread extends Thread {
     public static void rebootOrShutdown(boolean reboot, String reason) {
         if (reboot) {
             Log.i(TAG, "Rebooting, reason: " + reason);
+			
+			// check if restart was requested
+			if (mRestart) {
+				// crash system server to restart framework
+				try {
+					IBinder b = ServiceManager.getService(Context.POWER_SERVICE);
+					IPowerManager pm = IPowerManager.Stub.asInterface(b);
+					pm.crash("Crashed framework, now restarting");
+					} catch (RemoteException e) {
+						Log.e(TAG, "Restart failed, will attempt reboot instead", e);
+						reason = null;
+					}
+			}
+			// normal reboot
 			try {
                 Power.reboot(reason);
             } catch (Exception e) {
@@ -447,7 +473,7 @@ public final class ShutdownThread extends Thread {
                 vibrator.vibrate(SHUTDOWN_VIBRATE_MS);
             } catch (Exception e) {
                 // Failure to vibrate shouldn't interrupt shutdown.  Just log it.
-                Log.w(TAG, "Failed to vibrate during shutdown.", e);
+                Log.w(TAG, "Failed to vibrate during shutdown", e);
             }
 			
             // vibrator is asynchronous so we need to wait to avoid shutting down too soon.

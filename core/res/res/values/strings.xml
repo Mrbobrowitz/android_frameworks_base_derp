@@ -293,12 +293,21 @@
     <!-- Spoken description for ringer normal option. [CHAR LIMIT=NONE] -->
     <string name="silent_mode_ring">Ringer on</string>
  
+    <!-- Restart Progress Dialog message. Shown if the user chooses to restart option -->
+    <string name="restart_progress">Restarting\u2026</string>
+    <!-- Restart Progress Dialog title. Shown if the user chooses to restart the tablet -->
+    <string name="restart_title" product="tablet">Your tablet will restart.</string>
+    <!-- Restart Progress Dialog title. Shown if the user chooses to restart the phone -->
+    <string name="restart_title" product="default">Your phone will restart.</string>
 
     <!-- Button to reboot the phone, within the Phone Options dialog -->
     <string name="reboot_system">Reboot phone</string>
 
     <!-- Button to reboot the phone, within the Reboot Options dialog -->
     <string name="reboot_reboot">Reboot</string>
+    
+    <!-- Button to restart the phone very quickly, within the Reboot Options dialog -->
+    <string name="reboot_restart">Restart</string>
  
     <!-- Button to reboot the phone into recovery, within the Reboot Options dialog -->
     <string name="reboot_recovery">Recovery</string>

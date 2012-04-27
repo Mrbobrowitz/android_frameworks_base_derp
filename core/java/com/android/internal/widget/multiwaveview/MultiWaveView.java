@@ -961,7 +961,12 @@ Log.w(TAG, "The number of target drawables must be"
 return null;
 }
 }
-return mTargetDescriptions.get(index);
+String s = "";
+try {
+s = mTargetDescriptions.get(index);
+} catch (IndexOutOfBoundsException e) {
+}
+return s;
 }
 
 private String getDirectionDescription(int index) {
@@ -975,6 +980,7 @@ return null;
 }
 return mDirectionDescriptions.get(index);
 }
+
 
 private ArrayList<String> loadDescriptions(int resourceId) {
 TypedArray array = getContext().getResources().obtainTypedArray(resourceId);

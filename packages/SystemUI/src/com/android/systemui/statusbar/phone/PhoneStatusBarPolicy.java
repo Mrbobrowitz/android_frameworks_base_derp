@@ -61,6 +61,12 @@ public class PhoneStatusBarPolicy {
     private static final int AM_PM_STYLE_GONE    = 2;
 
     private static final int AM_PM_STYLE = AM_PM_STYLE_GONE;
+	
+	private static final int WEEKDAY_STYLE_GONE = 0;
+	private static final int WEEKDAY_STYLE_SMALL = 1;
+	private static final int WEEKDAY_STYLE_NORMAL = 2;
+	
+	public static final int WEEKDAY_STYLE = WEEKDAY_STYLE_GONE;
 
     private static final int INET_CONDITION_THRESHOLD = 50;
 

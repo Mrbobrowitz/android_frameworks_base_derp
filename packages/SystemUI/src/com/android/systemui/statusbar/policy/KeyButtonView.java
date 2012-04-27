@@ -25,6 +25,7 @@ import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -61,6 +62,8 @@ public class KeyButtonView extends ImageView {
     float mGlowAlpha = 0f, mGlowScale = 1f, mDrawingAlpha = 1f;
     boolean mSupportsLongpress = true;
     RectF mRect = new RectF(0f, 0f, 0f, 0f);
+	
+	int mGlowBGColor = 0;
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
@@ -93,6 +96,8 @@ public class KeyButtonView extends ImageView {
 
         mGlowBG = a.getDrawable(R.styleable.KeyButtonView_glowBackground);
         if (mGlowBG != null) {
+			if (mGlowBGColor != Integer.MIN_VALUE)
+				mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
             mDrawingAlpha = BUTTON_QUIESCENT_ALPHA;
         }
         
@@ -303,8 +308,11 @@ public class KeyButtonView extends ImageView {
 		void observe() {
 			ContentResolver resolver = mContext.getContentResolver();
 			resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_TINT), false,
-										 this);
+					Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_TINT), false,
+					this);
+			resolver.registerContentObserver(
+					Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_GLOW_TINT), false,
+					this);
 			updateSettings();
 		}
 	
@@ -316,6 +324,19 @@ public class KeyButtonView extends ImageView {
 
 	protected void updateSettings() {
 		ContentResolver resolver = mContext.getContentResolver();
+
+		try {
+			mGlowBGColor = Settings.System.getInt(resolver,
+				Settings.System.NAVIGATION_BAR_GLOW_TINT);
+			if (mGlowBGColor == Integer.MIN_VALUE) {
+				mGlowBG.setColorFilter(null);
+			} else if (mGlowBG != null) {
+				mGlowBG.setColorFilter(null);
+				mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
+			}
+			} catch (SettingNotFoundException e1) {
+				mGlowBGColor = Integer.MIN_VALUE;
+		}
 
 		try {
 			setColorFilter(null);

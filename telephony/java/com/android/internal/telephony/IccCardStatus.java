@@ -29,7 +29,8 @@ public class IccCardStatus {
     public enum CardState {
         CARDSTATE_ABSENT,
         CARDSTATE_PRESENT,
-        CARDSTATE_ERROR;
+        CARDSTATE_ERROR,
+		CARDSTATE_NOT_READY;
 
         boolean isCardPresent() {
             return this == CARDSTATE_PRESENT;

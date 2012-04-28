@@ -82,6 +82,9 @@ public class IccCardStatus {
         case 2:
             mCardState = CardState.CARDSTATE_ERROR;
             break;
+		case 3:
+			mCardState = CardState.CARDSTATE_NOT_READY;
+			break;
         default:
             throw new RuntimeException("Unrecognized RIL_CardState: " + state);
         }

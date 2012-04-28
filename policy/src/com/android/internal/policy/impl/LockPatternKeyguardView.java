@@ -55,6 +55,7 @@ import android.os.Parcelable;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -573,30 +574,35 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         stopAndUnbindFromFaceLock();
     }
 
-    /** When screen is turned on and focused, need to bind to FaceLock service if we are using
-     *  FaceLock, but only if we're not dealing with a call
-    */
-    private void activateFaceLockIfAble() {
-        final boolean tooManyFaceUnlockTries =
-                (mFailedFaceUnlockAttempts >= FAILED_FACE_UNLOCK_ATTEMPTS_BEFORE_BACKUP);
-        final int failedBackupAttempts = mUpdateMonitor.getFailedAttempts();
-        final boolean backupIsTimedOut =
-                (failedBackupAttempts >= LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT);
-        if (tooManyFaceUnlockTries) Log.i(TAG, "tooManyFaceUnlockTries: " + tooManyFaceUnlockTries);
-        if (mUpdateMonitor.getPhoneState() == TelephonyManager.CALL_STATE_IDLE
-                && !mHasOverlay
-                && !tooManyFaceUnlockTries
-                && !backupIsTimedOut) {
-            bindToFaceLock();
-            // Show FaceLock area, but only for a little bit so lockpattern will become visible if
-            // FaceLock fails to start or crashes
-            if (usingFaceLock()) {
-                showFaceLockAreaWithTimeout(FACELOCK_VIEW_AREA_SERVICE_TIMEOUT);
-            }
-        } else {
-            hideFaceLockArea();
-        }
-    }
+	/** When screen is turned on and focused, need to bind to FaceLock service if we are using
+	 *  FaceLock, but only if we're not dealing with a call
+	 */
+	private void activateFaceLockIfAble() {
+		final boolean tooManyFaceUnlockTries =
+				(mFailedFaceUnlockAttempts >= FAILED_FACE_UNLOCK_ATTEMPTS_BEFORE_BACKUP);
+		final int failedBackupAttempts = mUpdateMonitor.getFailedAttempts();
+		final boolean backupIsTimedOut =
+				(failedBackupAttempts >= LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT);
+		if (tooManyFaceUnlockTries) Log.i(TAG, "tooManyFaceUnlockTries: " + tooManyFaceUnlockTries);
+		if (mUpdateMonitor.getPhoneState() == TelephonyManager.CALL_STATE_IDLE
+				&& usingFaceLock()
+				&& !mHasOverlay
+				&& !tooManyFaceUnlockTries
+				&& !backupIsTimedOut) {
+			bindToFaceLock();
+
+			// Show FaceLock area, but only for a little bit so lockpattern will become visible if
+			// FaceLock fails to start or crashes
+			showFaceLockAreaWithTimeout(FACELOCK_VIEW_AREA_SERVICE_TIMEOUT);
+
+			// When switching between portrait and landscape view while FaceLock is running, the
+			// screen will eventually go dark unless we poke the wakelock when FaceLock is
+			// restarted
+			mKeyguardScreenCallback.pokeWakelock();
+		} else {
+			hideFaceLockArea();
+		}
+	}
 
     @Override
     public void onScreenTurnedOn() {
@@ -1292,6 +1298,9 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
             }
 
             if (mFaceLockAreaView != null) {
+				int[] faceLockPosition;
+				faceLockPosition = new int[2];
+				mFaceLockAreaView.getLocationInWindow(faceLockPosition);
                 startFaceLock(mFaceLockAreaView.getWindowToken(),
                         mFaceLockAreaView.getLeft(), mFaceLockAreaView.getTop(),
                         mFaceLockAreaView.getWidth(), mFaceLockAreaView.getHeight());
@@ -1318,7 +1327,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
                 if (!mFaceLockServiceRunning) {
                     if (DEBUG) Log.d(TAG, "Starting FaceLock");
                     try {
-                        mFaceLockService.startUi(windowToken, x, y, h, w);
+                        mFaceLockService.startUi(windowToken, x, y, w, h);
                     } catch (RemoteException e) {
                         Log.e(TAG, "Caught exception starting FaceLock: " + e.toString());
                         return;

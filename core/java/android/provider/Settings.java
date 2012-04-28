@@ -2150,6 +2150,24 @@ public final class Settings {
 		public static final String STATUSBAR_SIGNAL_TEXT = "statusbar_signal_text";
 		public static final String STATUSBAR_SIGNAL_TEXT_COLOR = "statusbar_signal_text_color";
 		
+		/**
+         * [0] = how long to animate glow off
+         * [1] = how long to animate glow on
+         * 
+         * @hide
+         */
+        public static final String[] NAVIGATION_BAR_GLOW_DURATION = new String[] {
+		"navigation_bar_glow_duration_off",
+		"navigation_bar_glow_duration_on"
+        };
+		
+        /**
+         * 
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_BUTTON_ALPHA = "navigation_bar_button_alpha";
+		
+		
 		
 		/**
          * Setting to enable volume options.

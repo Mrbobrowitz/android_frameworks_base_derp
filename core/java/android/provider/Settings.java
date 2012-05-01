@@ -2108,6 +2108,18 @@ public final class Settings {
 		 */
         public static final String EXPANDED_FLASH_MODE = "expanded_flash_mode";
 		
+		/**
+         *MIUI Style Carrier Text (0=off,1=stock, 2= miui)
+         * @hide
+         */
+		public static final String TOP_CARRIER_LABEL = "top_carrier_label";
+		
+		/**
+         * MIUI Carrier Color
+         * @hide
+         */
+		public static final String TOP_CARRIER_LABEL_COLOR = "top_carrier_label_color";
+		
         /**
          * Notification Power Widget - Torch State
          * @hide
@@ -2208,11 +2220,43 @@ public final class Settings {
         public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
 		
 		/**
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
+		
+        /**
+         * @hide
+         */
+        public static final String USE_WEATHER = "use_weather";
+        
+        /**
+         * @hide
+         */
+        public static final String WEATHER_SHOW_LOCATION = "weather_show_location";
+        
+        /**
+         * @hide
+         */
+        public static final String WEATHER_STATUSBAR_STYLE = "weather_statusbar_style";
+		
+		/**
 		 * Carrier Color Selection
 		 *
 		 * @hide
 		 */
 		public static final String USE_CUSTOM_CARRIER_COLOR = "use_custom_carrier_color";
+		
+		/**
+         * @hide
+         */
+		public static final String CUSTOM_CARRIER_LABEL = "custom_carrier_label";
+		
+		/**
+         * @hide
+         */
+		public static final String USE_CUSTOM_CARRIER = "use_custom_carrier";
+		
+		
 		
 		/**
 		 * How long to keep the notification LED on (in milliseconds)
@@ -2681,7 +2725,6 @@ public final class Settings {
         public static final String WIFI_WATCHDOG_PING_TIMEOUT_MS =
             Secure.WIFI_WATCHDOG_PING_TIMEOUT_MS;
     
-        public static final String CUSTOM_CARRIER_LABEL = "custom_carrier_label";
 		
 		/**
 		 * Whether to show the battery bar or not.

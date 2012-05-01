@@ -42,31 +42,32 @@ import com.android.internal.R;
  */
 public class CarrierLabel extends TextView {
     private boolean mAttached;
-	private Handler mHandler;
-
+    
+    private Handler mHandler;
+	
     public CarrierLabel(Context context) {
         this(context, null);
     }
-
+	
     public CarrierLabel(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
-
+	
     public CarrierLabel(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         updateNetworkName(false, null, false, null);
-    
-	
-		mHandler = new Handler();
-		SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-		settingsObserver.observe();
+        
+        mHandler = new Handler();
+        SettingsObserver settingsObserver = new SettingsObserver(mHandler);
+        settingsObserver.observe();
 		
-	}
-
+        updateSettings();
+    }
+	
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-
+		
         if (!mAttached) {
             mAttached = true;
             IntentFilter filter = new IntentFilter();
@@ -74,7 +75,7 @@ public class CarrierLabel extends TextView {
             getContext().registerReceiver(mIntentReceiver, filter, null, getHandler());
         }
     }
-
+	
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
@@ -83,76 +84,108 @@ public class CarrierLabel extends TextView {
             mAttached = false;
         }
     }
-
+	
     private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (Telephony.Intents.SPN_STRINGS_UPDATED_ACTION.equals(action)) {
-                updateNetworkName(intent.getBooleanExtra(Telephony.Intents.EXTRA_SHOW_SPN, false),
-                        intent.getStringExtra(Telephony.Intents.EXTRA_SPN),
-                        intent.getBooleanExtra(Telephony.Intents.EXTRA_SHOW_PLMN, false),
-                        intent.getStringExtra(Telephony.Intents.EXTRA_PLMN));
-            }
-        }
-    };
+	@Override
+	public void onReceive(Context context, Intent intent) {
+	String action = intent.getAction();
+	if (Telephony.Intents.SPN_STRINGS_UPDATED_ACTION.equals(action)) {
+		updateNetworkName(intent.getBooleanExtra(Telephony.Intents.EXTRA_SHOW_SPN, false),
+						  intent.getStringExtra(Telephony.Intents.EXTRA_SPN),
+						  intent.getBooleanExtra(Telephony.Intents.EXTRA_SHOW_PLMN, false),
+						  intent.getStringExtra(Telephony.Intents.EXTRA_PLMN));
+	}
+}
+};
 
-    void updateNetworkName(boolean showSpn, String spn, boolean showPlmn, String plmn) {
-        if (false) {
-            Slog.d("CarrierLabel", "updateNetworkName showSpn=" + showSpn + " spn=" + spn
-                    + " showPlmn=" + showPlmn + " plmn=" + plmn);
-        }
-
-        String customLabel = null;
-        customLabel = Settings.System.getString(mContext.getContentResolver(),
-                Settings.System.CUSTOM_CARRIER_LABEL);
-
-        if (customLabel == null) {
-
-            StringBuilder str = new StringBuilder();
-            boolean something = false;
-            if (showPlmn && plmn != null) {
-                str.append(plmn);
-                something = true;
-            }
-            if (showSpn && spn != null) {
-                if (something) {
-                    str.append('\n');
-            }
-            str.append(spn);
-            something = true;
-        }
-
-            if (something) {
-                setText(str.toString());
-            } else {
-                setText(com.android.internal.R.string.lockscreen_carrier_default);
-            }
-        } else {
-            setText(customLabel);
-        }
+void updateNetworkName(boolean showSpn, String spn, boolean showPlmn, String plmn) {
+if (false) {
+Slog.d("CarrierLabel", "updateNetworkName showSpn=" + showSpn + " spn=" + spn
++ " showPlmn=" + showPlmn + " plmn=" + plmn);
 }
 
-		class SettingsObserver extends ContentObserver {
-			SettingsObserver(Handler handler) {
-				super(handler);
-			}
-			void observe() {
-				ContentResolver resolver = mContext.getContentResolver();
-				resolver.registerContentObserver(
-						Settings.System.getUriFor(Settings.System.USE_CUSTOM_CARRIER_COLOR), false, this);
-			}
-			@Override
-			public void onChange(boolean selfChange) {
-				updateSettings();
-			}
-			
-		private void updateSettings() {
-			ContentResolver resolver = mContext.getContentResolver();
-			int mColorChanger = Settings.System.getInt(resolver,
-			Settings.System.USE_CUSTOM_CARRIER_COLOR, 0xFF33B5E5);
-			
-			setTextColor(mColorChanger);
-		}
-		}
+boolean mCustomCarrier = (Settings.System.getInt(mContext.getContentResolver(), Settings.System.USE_CUSTOM_CARRIER, 1) == 2);
+if (mCustomCarrier) {
+String customCarrier = null;
+customCarrier = Settings.System.getString(mContext.getContentResolver(), Settings.System.CUSTOM_CARRIER_LABEL);
+
+if (customCarrier == null) {
+StringBuilder str = new StringBuilder();
+boolean something = false;
+if (showPlmn && plmn != null) {
+str.append(plmn);
+something = true;
+}
+if (showSpn && spn != null) {
+if (something) {
+str.append('\n');
+}
+str.append(spn);
+something = true;
+}
+if (something) {
+setText(str.toString());
+} else {
+setText(com.android.internal.R.string.lockscreen_carrier_default);
+}
+} else {
+setText(customCarrier);
+}
+} else {
+StringBuilder str = new StringBuilder();
+boolean something = false;
+if (showPlmn && plmn != null) {
+str.append(plmn);
+something = true;
+}
+if (showSpn && spn != null) {
+if (something) {
+str.append('\n');
+}
+str.append(spn);
+something = true;
+}
+if (something) {
+setText(str.toString());
+} else {
+setText(com.android.internal.R.string.lockscreen_carrier_default);
+}
+}
+
+}
+
+class SettingsObserver extends ContentObserver {
+	SettingsObserver(Handler handler) {
+		super(handler);
+	}
+	
+	void observe() {
+		ContentResolver resolver = mContext.getContentResolver();
+		resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.USE_CUSTOM_CARRIER), false, this);
+		resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.USE_CUSTOM_CARRIER_COLOR), false, this);
+	}
+	
+	@Override
+	public void onChange(boolean selfChange) {
+		updateSettings();
+	}
+}
+
+private void updateSettings() {
+ContentResolver resolver = mContext.getContentResolver();
+
+int mColorChanger = Settings.System.getInt(resolver,
+Settings.System.USE_CUSTOM_CARRIER_COLOR, 0xFF33B5E5);
+
+setTextColor(mColorChanger);
+
+boolean mDontShow = (Settings.System.getInt(resolver, Settings.System.USE_CUSTOM_CARRIER, 1) == 0);
+if (mDontShow) {
+setVisibility(View.GONE);
+} else {
+setVisibility(View.VISIBLE);
+}
+}    
 }

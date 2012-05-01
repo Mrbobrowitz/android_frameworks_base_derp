@@ -165,7 +165,8 @@ public abstract class StatusBar extends SystemUI implements CommandQueue.Callbac
         }
 
         mDoNotDisturb = new DoNotDisturb(mContext);
-    }
+		
+	    }
 
     protected View updateNotificationVetoButton(View row, StatusBarNotification n) {
         View vetoButton = row.findViewById(R.id.veto);

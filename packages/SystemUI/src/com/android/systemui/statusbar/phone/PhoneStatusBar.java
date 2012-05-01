@@ -85,6 +85,7 @@ import com.android.systemui.statusbar.NotificationData;
 import com.android.systemui.statusbar.StatusBar;
 import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.SignalClusterView;
+import com.android.systemui.statusbar.phone.CarrierLabelTop;
 import com.android.systemui.statusbar.policy.CenterClock;
 import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.DateView;
@@ -154,6 +155,8 @@ public class PhoneStatusBar extends StatusBar {
     // icons
     LinearLayout mIcons;
     IconMerger mNotificationIcons;
+	LinearLayout mCarrierSpace;
+	CarrierLabelTop mCarrier;
     View mMoreIcon;
     LinearLayout mStatusIcons;
 	
@@ -163,6 +166,7 @@ public class PhoneStatusBar extends StatusBar {
     WindowManager.LayoutParams mExpandedParams;
     ScrollView mScrollView;
     View mExpandedContents;
+	
     // top bar
     TextView mNoNotificationsTitle;
     View mClearButton;
@@ -194,6 +198,8 @@ public class PhoneStatusBar extends StatusBar {
     WindowManager.LayoutParams mTrackingParams;
     int mTrackingPosition; // the position of the top of the tracking view.
     private boolean mPanelSlightlyVisible;
+	private boolean mShowCarrierTop1;
+	private boolean mShowCarrierTop2;
 	
     // the power widget
     PowerWidget mPowerWidget;
@@ -321,6 +327,8 @@ public class PhoneStatusBar extends StatusBar {
         mNotificationIcons.setOverflowIndicator(mMoreIcon);
         mIcons = (LinearLayout)sb.findViewById(R.id.icons);
         mCenterClockLayout = (LinearLayout) sb.findViewById(R.id.center_clock_layout);
+		mCarrier = (CarrierLabelTop) sb.findViewById(R.id.carriertop);
+		mCarrierSpace = (LinearLayout) sb.findViewById(R.id.carriertopspace);
         mTickerView = sb.findViewById(R.id.ticker);
 		
         mExpandedDialog = new ExpandedDialog(context);
@@ -332,26 +340,25 @@ public class PhoneStatusBar extends StatusBar {
 		
         mClearButton = expanded.findViewById(R.id.clear_all_button);
         mClearButton.setOnClickListener(mClearButtonListener);
-        mClearButton.setAlpha(0f);
         mClearButton.setEnabled(false);
         mDateView = (DateView)expanded.findViewById(R.id.date);
         mSettingsButton = expanded.findViewById(R.id.settings_button);
         mSettingsButton.setOnClickListener(mSettingsButtonListener);
         mScrollView = (ScrollView)expanded.findViewById(R.id.scroll);
-		
+		mClearButton.setAlpha(0f);
 		
         mPowerWidget = (PowerWidget)expanded.findViewById(R.id.exp_power_stat);
         mPowerWidget.setupSettingsObserver(mHandler);
         mPowerWidget.setGlobalButtonOnClickListener(new View.OnClickListener() {
+		
 			public void onClick(View v) {
-				if(Settings.System.getInt(mContext.getContentResolver(),
-										  Settings.System.EXPANDED_HIDE_ONCHANGE, 0) == 1) {
+			if(Settings.System.getInt(mContext.getContentResolver(),
+						Settings.System.EXPANDED_HIDE_ONCHANGE, 0) == 1) {
 					animateCollapse();
 				}
 			}
 		});
-		
-		
+			
         mTicker = new MyTicker(context, sb);
 		
         TickerView tickerView = (TickerView)sb.findViewById(R.id.tickerText);
@@ -384,12 +391,15 @@ public class PhoneStatusBar extends StatusBar {
         updateRecentsPanel();
 		
         // receive broadcasts
+		
+		
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         filter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         context.registerReceiver(mBroadcastReceiver, filter);
 		
+		// restore state
 		mPowerWidget.setupWidget();
 		
         return sb;
@@ -1008,35 +1018,45 @@ if (entry == null) {
 Slog.w(TAG, "removeNotification for unknown key: " + key);
 return null;
 }
-// Remove the expanded view.
-ViewGroup rowParent = (ViewGroup)entry.row.getParent();
-if (rowParent != null) rowParent.removeView(entry.row);
-updateNotificationIcons();
+	// Remove the expanded view.
+	ViewGroup rowParent = (ViewGroup)entry.row.getParent();
+	if (rowParent != null) rowParent.removeView(entry.row);
+		updateNotificationIcons();
 
-return entry.notification;
-}
+	return entry.notification;
+	}
 
-private void setAreThereNotifications() {
-final boolean any = mNotificationData.size() > 0;
+	private void setAreThereNotifications() {
+	final boolean any = mNotificationData.size() > 0;
+	boolean hasData = mNotificationData.hasVisibleItems();
 
-final boolean clearable = any && mNotificationData.hasClearableItems();
+	final boolean clearable = any && mNotificationData.hasClearableItems();
 
-if (DEBUG) {
-Slog.d(TAG, "setAreThereNotifications: N=" + mNotificationData.size()
-+ " any=" + any + " clearable=" + clearable);
-}
+		if (mClearButton.isShown()) {
+			if (clearable != (mClearButton.getAlpha() == 1.0f)) {
+				ObjectAnimator.ofFloat(mClearButton, "alpha",
+				clearable ? 1.0f : 0.0f)
+				.setDuration(250)
+				.start();
+			}
+		} else {
+			mClearButton.setAlpha(clearable ? 1.0f : 0.0f);
+		}
+		mClearButton.setEnabled(clearable);
 
-if (mClearButton.isShown()) {
-if (clearable != (mClearButton.getAlpha() == 1.0f)) {
-ObjectAnimator.ofFloat(mClearButton, "alpha",
-clearable ? 1.0f : 0.0f)
-.setDuration(250)
-.start();
-}
-} else {
-mClearButton.setAlpha(clearable ? 1.0f : 0.0f);
-}
-mClearButton.setEnabled(clearable);
+	
+		mShowCarrierTop1 = (Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.TOP_CARRIER_LABEL, 0) == 1);
+		mShowCarrierTop2 =  (Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.TOP_CARRIER_LABEL, 0) == 2);
+
+		if (mShowCarrierTop1 || mShowCarrierTop2) {
+			if (hasData) {
+				mCarrier.setVisibility(View.GONE);
+			} else {
+				mCarrier.setVisibility(View.VISIBLE);
+			}
+		}
 
 /*
  if (mNoNotificationsTitle.isShown()) {
@@ -1055,257 +1075,274 @@ mClearButton.setEnabled(clearable);
 
 	public void showClock(boolean show) {
 
+		mShowCarrierTop1 = (Settings.System.getInt(mContext.getContentResolver(),
+					Settings.System.TOP_CARRIER_LABEL, 0) == 1);
+		mShowCarrierTop2 =  (Settings.System.getInt(mContext.getContentResolver(),
+					Settings.System.TOP_CARRIER_LABEL, 0) == 2);
+		boolean hasData = mNotificationData.hasVisibleItems();
+
 		Clock clock = (Clock) mStatusBarView.findViewById(R.id.clock);
-		if (clock != null) {
-			clock.updateVisibilityFromStatusBar(show);
+			if (clock != null) {
+				clock.updateVisibilityFromStatusBar(show);
+			}
+		CenterClock cclock = (CenterClock) mStatusBarView.findViewById(R.id.center_clock);	
+			if (cclock != null) {	
+				cclock.updateVisibilityFromStatusBar(show);	
+			}
+
+			if (mShowCarrierTop1 && show && !hasData || mShowCarrierTop2 && show && !hasData) {
+				mCarrier.setVisibility(View.VISIBLE);
+			} else if (mShowCarrierTop1 && show && hasData  || mShowCarrierTop2 && show && hasData) {
+				mCarrier.setVisibility(View.GONE);
+			} else if (mShowCarrierTop1 || mShowCarrierTop2) {
+				mCarrier.setVisibility(View.GONE);
+			}
 		}
-CenterClock cclock = (CenterClock) mStatusBarView.findViewById(R.id.center_clock);	
-        if (cclock != null) {	
-            cclock.updateVisibilityFromStatusBar(show);	
-        }
-	}
 
-/**
- * State is one or more of the DISABLE constants from StatusBarManager.
- */
-public void disable(int state) {
-final int old = mDisabled;
-final int diff = state ^ old;
-mDisabled = state;
+	/**
+	 * State is one or more of the DISABLE constants from StatusBarManager.
+	 */
+	public void disable(int state) {
+		final int old = mDisabled;
+		final int diff = state ^ old;
+		mDisabled = state;
 
-if (DEBUG) {
-Slog.d(TAG, String.format("disable: 0x%08x -> 0x%08x (diff: 0x%08x)",
-old, state, diff));
-}
+		if (DEBUG) {
+			Slog.d(TAG, String.format("disable: 0x%08x -> 0x%08x (diff: 0x%08x)",
+			old, state, diff));
+		}
 
-StringBuilder flagdbg = new StringBuilder();
-flagdbg.append("disable: < ");
-flagdbg.append(((state & StatusBarManager.DISABLE_EXPAND) != 0) ? "EXPAND" : "expand");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_EXPAND) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) ? "ICONS" : "icons");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_ALERTS) != 0) ? "ALERTS" : "alerts");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_ALERTS) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) ? "TICKER" : "ticker");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) ? "SYSTEM_INFO" : "system_info");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_BACK) != 0) ? "BACK" : "back");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_BACK) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_HOME) != 0) ? "HOME" : "home");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_HOME) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_RECENT) != 0) ? "RECENT" : "recent");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_RECENT) != 0) ? "* " : " ");
-flagdbg.append(((state & StatusBarManager.DISABLE_CLOCK) != 0) ? "CLOCK" : "clock");
-flagdbg.append(((diff  & StatusBarManager.DISABLE_CLOCK) != 0) ? "* " : " ");
-flagdbg.append(">");
-Slog.d(TAG, flagdbg.toString());
+		StringBuilder flagdbg = new StringBuilder();
+		flagdbg.append("disable: < ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_EXPAND) != 0) ? "EXPAND" : "expand");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_EXPAND) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) ? "ICONS" : "icons");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_ALERTS) != 0) ? "ALERTS" : "alerts");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_ALERTS) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) ? "TICKER" : "ticker");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) ? "SYSTEM_INFO" : "system_info");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_BACK) != 0) ? "BACK" : "back");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_BACK) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_HOME) != 0) ? "HOME" : "home");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_HOME) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_RECENT) != 0) ? "RECENT" : "recent");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_RECENT) != 0) ? "* " : " ");
+		flagdbg.append(((state & StatusBarManager.DISABLE_CLOCK) != 0) ? "CLOCK" : "clock");
+		flagdbg.append(((diff  & StatusBarManager.DISABLE_CLOCK) != 0) ? "* " : " ");
+		flagdbg.append(">");
+		Slog.d(TAG, flagdbg.toString());
 
-if ((diff & StatusBarManager.DISABLE_CLOCK) != 0) {
-boolean show = (state & StatusBarManager.DISABLE_CLOCK) == 0;
-showClock(show);
-}
-if ((diff & StatusBarManager.DISABLE_EXPAND) != 0) {
-if ((state & StatusBarManager.DISABLE_EXPAND) != 0) {
-animateCollapse();
-}
-}
-
-if ((diff & (StatusBarManager.DISABLE_HOME
-| StatusBarManager.DISABLE_RECENT
-| StatusBarManager.DISABLE_BACK)) != 0) {
-// the nav bar will take care of these
-if (mNavigationBarView != null) mNavigationBarView.setDisabledFlags(state);
-
-if ((state & StatusBarManager.DISABLE_RECENT) != 0) {
-// close recents if it's visible
-mHandler.removeMessages(MSG_CLOSE_RECENTS_PANEL);
-mHandler.sendEmptyMessage(MSG_CLOSE_RECENTS_PANEL);
-}
-}
-
-if ((diff & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) {
-if ((state & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) {
-if (mTicking) {
-mTicker.halt();
-} else {
-setNotificationIconVisibility(false, com.android.internal.R.anim.fade_out);
-}
-} else {
-if (!mExpandedVisible) {
-setNotificationIconVisibility(true, com.android.internal.R.anim.fade_in);
-}
-}
-} else if ((diff & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) {
-if (mTicking && (state & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) {
-mTicker.halt();
-}
-}
-}
-
-/**
- * All changes to the status bar and notifications funnel through here and are batched.
- */
-private class H extends Handler {
-	public void handleMessage(Message m) {
-		switch (m.what) {
-			case MSG_ANIMATE:
-				doAnimation();
-				break;
-			case MSG_ANIMATE_REVEAL:
-				doRevealAnimation();
-				break;
-			case MSG_OPEN_NOTIFICATION_PANEL:
-				animateExpand();
-				break;
-			case MSG_CLOSE_NOTIFICATION_PANEL:
+		if ((diff & StatusBarManager.DISABLE_CLOCK) != 0) {
+			boolean show = (state & StatusBarManager.DISABLE_CLOCK) == 0;
+			showClock(show);
+		}
+		if ((diff & StatusBarManager.DISABLE_EXPAND) != 0) {
+			if ((state & StatusBarManager.DISABLE_EXPAND) != 0) {
 				animateCollapse();
-				break;
-			case MSG_SHOW_INTRUDER:
-				setIntruderAlertVisibility(true);
-				break;
-			case MSG_HIDE_INTRUDER:
-				setIntruderAlertVisibility(false);
-				break;
-			case MSG_OPEN_RECENTS_PANEL:
-				if (DEBUG) Slog.d(TAG, "opening recents panel");
-				if (mRecentsPanel != null) {
-					mRecentsPanel.show(true, true);
+			}
+		}
+
+		if ((diff & (StatusBarManager.DISABLE_HOME
+				| StatusBarManager.DISABLE_RECENT
+				| StatusBarManager.DISABLE_BACK)) != 0) {
+			// the nav bar will take care of these
+			if (mNavigationBarView != null) 
+				mNavigationBarView.setDisabledFlags(state);
+	
+			if ((state & StatusBarManager.DISABLE_RECENT) != 0) {
+				// close recents if it's visible
+				mHandler.removeMessages(MSG_CLOSE_RECENTS_PANEL);
+				mHandler.sendEmptyMessage(MSG_CLOSE_RECENTS_PANEL);
+			}
+		}
+
+		if ((diff & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) {
+			if ((state & StatusBarManager.DISABLE_NOTIFICATION_ICONS) != 0) {
+				if (mTicking) {
+					mTicker.halt();
+				} else {
+					setNotificationIconVisibility(false, com.android.internal.R.anim.fade_out);
 				}
-				break;
-			case MSG_CLOSE_RECENTS_PANEL:
-				if (DEBUG) Slog.d(TAG, "closing recents panel");
-				if (mRecentsPanel != null && mRecentsPanel.isShowing()) {
-					mRecentsPanel.show(false, true);
+			} else {
+				if (!mExpandedVisible) {
+					setNotificationIconVisibility(true, com.android.internal.R.anim.fade_in);
 				}
-				break;
+			}
+		} else if ((diff & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) {
+			if (mTicking && (state & StatusBarManager.DISABLE_NOTIFICATION_TICKER) != 0) {
+				mTicker.halt();
+			}
 		}
 	}
-}
 
-View.OnFocusChangeListener mFocusChangeListener = new View.OnFocusChangeListener() {
-public void onFocusChange(View v, boolean hasFocus) {
-// Because 'v' is a ViewGroup, all its children will be (un)selected
-// too, which allows marqueeing to work.
-v.setSelected(hasFocus);
-}
-};
+	/**
+	 * All changes to the status bar and notifications funnel through here and are batched.
+	 */
+	private class H extends Handler {
+		public void handleMessage(Message m) {
+			switch (m.what) {
+				case MSG_ANIMATE:
+					doAnimation();
+					break;
+				case MSG_ANIMATE_REVEAL:
+					doRevealAnimation();
+					break;
+				case MSG_OPEN_NOTIFICATION_PANEL:
+					animateExpand();
+					break;
+				case MSG_CLOSE_NOTIFICATION_PANEL:
+					animateCollapse();
+					break;
+				case MSG_SHOW_INTRUDER:
+					setIntruderAlertVisibility(true);
+					break;
+				case MSG_HIDE_INTRUDER:
+					setIntruderAlertVisibility(false);
+					break;
+				case MSG_OPEN_RECENTS_PANEL:
+					if (DEBUG) Slog.d(TAG, "opening recents panel");
+					if (mRecentsPanel != null) {
+						mRecentsPanel.show(true, true);
+					}
+					break;
+				case MSG_CLOSE_RECENTS_PANEL:
+					if (DEBUG) Slog.d(TAG, "closing recents panel");
+					if (mRecentsPanel != null && mRecentsPanel.isShowing()) {
+						mRecentsPanel.show(false, true);
+					}
+					break;
+			}
+		}
+	}
 
-private void makeExpandedVisible() {
-if (SPEW) Slog.d(TAG, "Make expanded visible: expanded visible=" + mExpandedVisible);
-if (mExpandedVisible) {
-return;
-}
-mExpandedVisible = true;
-visibilityChanged(true);
+	View.OnFocusChangeListener mFocusChangeListener = new View.OnFocusChangeListener() {
+		public void onFocusChange(View v, boolean hasFocus) {
+			// Because 'v' is a ViewGroup, all its children will be (un)selected
+			// too, which allows marqueeing to work.
+			v.setSelected(hasFocus);
+		}
+		};
 
-updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
-mExpandedParams.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-mExpandedParams.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-if (DEBUG) {
-Slog.d(TAG, "makeExpandedVisible: expanded params = " + mExpandedParams);
-}
-mExpandedDialog.getWindow().setAttributes(mExpandedParams);
-mExpandedView.requestFocus(View.FOCUS_FORWARD);
-mTrackingView.setVisibility(View.VISIBLE);
-}
+	private void makeExpandedVisible() {
+		if (SPEW) Slog.d(TAG, "Make expanded visible: expanded visible=" + mExpandedVisible);
+			if (mExpandedVisible) {
+				return;
+			}
+			mExpandedVisible = true;
+			visibilityChanged(true);
 
-public void animateExpand() {
-if (SPEW) Slog.d(TAG, "Animate expand: expanded=" + mExpanded);
-if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
-return ;
-}
-if (mExpanded) {
-return;
-}
+			updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
+			mExpandedParams.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+			mExpandedParams.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+			if (DEBUG) {
+				Slog.d(TAG, "makeExpandedVisible: expanded params = " + mExpandedParams);
+			}
+			mExpandedDialog.getWindow().setAttributes(mExpandedParams);
+			mExpandedView.requestFocus(View.FOCUS_FORWARD);
+			mTrackingView.setVisibility(View.VISIBLE);
+		}
 
-prepareTracking(0, true);
-performFling(0, mSelfExpandVelocityPx, true);
-}
+	public void animateExpand() {
+		if (SPEW) Slog.d(TAG, "Animate expand: expanded=" + mExpanded);
+			if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
+				return ;
+			}
+			if (mExpanded) {
+				return;
+				}
 
-public void animateCollapse() {
-animateCollapse(false);
-}
+			prepareTracking(0, true);
+			performFling(0, mSelfExpandVelocityPx, true);
+		}
 
-public void animateCollapse(boolean excludeRecents) {
-animateCollapse(excludeRecents, 1.0f);
-}
+	public void animateCollapse() {
+		animateCollapse(false);
+	}
 
-public void animateCollapse(boolean excludeRecents, float velocityMultiplier) {
-if (SPEW) {
-Slog.d(TAG, "animateCollapse(): mExpanded=" + mExpanded
-+ " mExpandedVisible=" + mExpandedVisible
-+ " mExpanded=" + mExpanded
-+ " mAnimating=" + mAnimating
-+ " mAnimY=" + mAnimY
-+ " mAnimVel=" + mAnimVel);
-}
+	public void animateCollapse(boolean excludeRecents) {
+		animateCollapse(excludeRecents, 1.0f);
+	}
 
-if (!excludeRecents) {
-mHandler.removeMessages(MSG_CLOSE_RECENTS_PANEL);
-mHandler.sendEmptyMessage(MSG_CLOSE_RECENTS_PANEL);
-}
+	public void animateCollapse(boolean excludeRecents, float velocityMultiplier) {
+		if (SPEW) {
+			Slog.d(TAG, "animateCollapse(): mExpanded=" + mExpanded
+					+ " mExpandedVisible=" + mExpandedVisible
+					+ " mExpanded=" + mExpanded
+					+ " mAnimating=" + mAnimating
+					+ " mAnimY=" + mAnimY
+					+ " mAnimVel=" + mAnimVel);
+		}
 
-if (!mExpandedVisible) {
-return;
-}
+		if (!excludeRecents) {
+			mHandler.removeMessages(MSG_CLOSE_RECENTS_PANEL);
+			mHandler.sendEmptyMessage(MSG_CLOSE_RECENTS_PANEL);
+		}
 
-int y;
-if (mAnimating) {
-y = (int)mAnimY;
-} else {
-y = mDisplayMetrics.heightPixels-1;
-}
-// Let the fling think that we're open so it goes in the right direction
-// and doesn't try to re-open the windowshade.
-mExpanded = true;
-prepareTracking(y, false);
-performFling(y, -mSelfCollapseVelocityPx*velocityMultiplier, true);
-}
+		if (!mExpandedVisible) {
+			return;
+		}
 
-void performExpand() {
-if (SPEW) Slog.d(TAG, "performExpand: mExpanded=" + mExpanded);
-if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
-return ;
-}
-if (mExpanded) {
-return;
-}
+		int y;
+		if (mAnimating) {
+			y = (int)mAnimY;
+		} else {
+			y = mDisplayMetrics.heightPixels-1;
+		}
+		// Let the fling think that we're open so it goes in the right direction
+		// and doesn't try to re-open the windowshade.
+		mExpanded = true;
+		prepareTracking(y, false);
+		performFling(y, -mSelfCollapseVelocityPx*velocityMultiplier, true);
+	}
 
-mExpanded = true;
-makeExpandedVisible();
-updateExpandedViewPos(EXPANDED_FULL_OPEN);
+	void performExpand() {
+		if (SPEW) Slog.d(TAG, "performExpand: mExpanded=" + mExpanded);
+			if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
+				return ;
+			}
+			if (mExpanded) {
+				return;
+			}
 
-if (false) postStartTracing();
-}
+			mExpanded = true;
+			makeExpandedVisible();
+			updateExpandedViewPos(EXPANDED_FULL_OPEN);
 
-void performCollapse() {
-if (SPEW) Slog.d(TAG, "performCollapse: mExpanded=" + mExpanded
-+ " mExpandedVisible=" + mExpandedVisible);
+			if (false) 
+				postStartTracing();
+		}
 
-if (!mExpandedVisible) {
-return;
-}
-mExpandedVisible = false;
-visibilityChanged(false);
-mExpandedParams.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-mExpandedParams.flags &= ~WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-mExpandedDialog.getWindow().setAttributes(mExpandedParams);
-mTrackingView.setVisibility(View.GONE);
+	void performCollapse() {
+		if (SPEW) 
+			Slog.d(TAG, "performCollapse: mExpanded=" + mExpanded
+					+ " mExpandedVisible=" + mExpandedVisible);
 
-if ((mDisabled & StatusBarManager.DISABLE_NOTIFICATION_ICONS) == 0) {
-setNotificationIconVisibility(true, com.android.internal.R.anim.fade_in);
-}
+		if (!mExpandedVisible) {
+			return;
+		}
+		mExpandedVisible = false;
+		visibilityChanged(false);
+		mExpandedParams.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+		mExpandedParams.flags &= ~WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+		mExpandedDialog.getWindow().setAttributes(mExpandedParams);
+		mTrackingView.setVisibility(View.GONE);
 
-if (!mExpanded) {
-return;
-}
-mExpanded = false;
-if (mPostCollapseCleanup != null) {
-mPostCollapseCleanup.run();
-mPostCollapseCleanup = null;
-}
-}
+		if ((mDisabled & StatusBarManager.DISABLE_NOTIFICATION_ICONS) == 0) {
+			setNotificationIconVisibility(true, com.android.internal.R.anim.fade_in);
+		}
+
+		if (!mExpanded) {
+			return;
+		}
+		mExpanded = false;
+		if (mPostCollapseCleanup != null) {
+			mPostCollapseCleanup.run();
+			mPostCollapseCleanup = null;
+		}
+	}
 
 void doAnimation() {
 if (mAnimating) {
@@ -1722,9 +1759,11 @@ private class MyTicker extends Ticker {
 		mIcons.setVisibility(View.GONE);
         mCenterClockLayout.setVisibility(View.GONE);
 		mTickerView.setVisibility(View.VISIBLE);
+		mCarrierSpace.setVisibility(View.GONE);
 		mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_up_in, null));
 		mIcons.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
 		mCenterClockLayout.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
+		mCarrierSpace.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
 	}
 	
 	@Override
@@ -1732,8 +1771,10 @@ private class MyTicker extends Ticker {
 		mIcons.setVisibility(View.VISIBLE);
         mCenterClockLayout.setVisibility(View.VISIBLE);
 		mTickerView.setVisibility(View.GONE);
+		mCarrierSpace.setVisibility(View.VISIBLE);
 		mIcons.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
-        mCenterClockLayout.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));   
+        mCenterClockLayout.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));  
+		mCarrierSpace.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
 		mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_down_out,
 											mTickingDoneListener));
 	}
@@ -1742,8 +1783,10 @@ private class MyTicker extends Ticker {
 		mIcons.setVisibility(View.VISIBLE);
         mCenterClockLayout.setVisibility(View.VISIBLE);
 		mTickerView.setVisibility(View.GONE);
+		mCarrierSpace.setVisibility(View.VISIBLE);
 		mIcons.startAnimation(loadAnim(com.android.internal.R.anim.fade_in, null));
         mCenterClockLayout.startAnimation(loadAnim(com.android.internal.R.anim.fade_in, null));
+		mCarrierSpace.startAnimation(loadAnim(com.android.internal.R.anim.fade_in, null));
 		mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.fade_out,
 											mTickingDoneListener));
 	}
@@ -2230,7 +2273,7 @@ v.getContext().startActivity(new Intent(Settings.ACTION_SETTINGS)
 animateCollapse();
 }
 };
-
+													
 private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
 public void onReceive(Context context, Intent intent) {
 String action = intent.getAction();

@@ -18,6 +18,7 @@ package com.android.internal.policy.impl;
 
 import android.app.Activity;
 import android.app.ActivityManagerNative;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.IActivityManager;
 import android.app.IUiModeManager;
 import android.app.ProgressDialog;
@@ -48,6 +49,7 @@ import android.os.LocalPowerManager;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
@@ -133,6 +135,7 @@ import android.view.KeyCharacterMap.FallbackAction;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Toast;
 import android.media.IAudioService;
 import android.media.AudioManager;
 
@@ -142,6 +145,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * WindowManagerPolicy implementation for the Android phone UI.  This
@@ -327,6 +331,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 	
     int mUserRotationMode = WindowManagerPolicy.USER_ROTATION_FREE;
     int mUserRotation = Surface.ROTATION_0;
+	int mUserRotationAngles = -1;
 	
     int mAllowAllRotations = -1;
     boolean mCarDockEnablesAccelerometer;
@@ -485,31 +490,33 @@ class SettingsObserver extends ContentObserver {
 	void observe() {
 		ContentResolver resolver = mContext.getContentResolver();
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.END_BUTTON_BEHAVIOR), false, this);
+				Settings.System.END_BUTTON_BEHAVIOR), false, this);
 		resolver.registerContentObserver(Settings.Secure.getUriFor(
-																   Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR), false, this);
+				Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.VOLUME_WAKE_SCREEN), false, this);
+				Settings.System.VOLUME_WAKE_SCREEN), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.ACCELEROMETER_ROTATION), false, this);
+				Settings.System.ACCELEROMETER_ROTATION_ANGLES), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.USER_ROTATION), false, this);
+				Settings.System.ACCELEROMETER_ROTATION), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.SCREEN_OFF_TIMEOUT), false, this);
+				Settings.System.USER_ROTATION), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.VOLBTN_MUSIC_CONTROLS), false, this);
+				Settings.System.SCREEN_OFF_TIMEOUT), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.ENABLE_FAST_TORCH), false, this);
+				Settings.System.VOLBTN_MUSIC_CONTROLS), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.WINDOW_ORIENTATION_LISTENER_LOG), false, this);
+				Settings.System.ENABLE_FAST_TORCH), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.POINTER_LOCATION), false, this);
+				Settings.System.WINDOW_ORIENTATION_LISTENER_LOG), false, this);
+		resolver.registerContentObserver(Settings.System.getUriFor(
+				Settings.System.POINTER_LOCATION), false, this);
 		resolver.registerContentObserver(Settings.Secure.getUriFor(
-																   Settings.Secure.DEFAULT_INPUT_METHOD), false, this);
+				Settings.Secure.DEFAULT_INPUT_METHOD), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   "fancy_rotation_anim"), false, this);
+				"fancy_rotation_anim"), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
-																   Settings.System.NAVIGATION_BAR_HIDE), false, this);
+				Settings.System.NAVIGATION_BAR_HIDE), false, this);
 		updateSettings();
 	}
 	
@@ -653,60 +660,62 @@ class MyOrientationListener extends WindowOrientationListener {
 			};
 		};
 
-/**
- * When a volumeup-key longpress expires, skip songs based on key press
- */
-Runnable mVolumeUpLongPress = new Runnable() {
-public void run() {
-// set the long press flag to true
-mIsLongPress = true;
+		/**
+		 * When a volumeup-key longpress expires, skip songs based on key press
+		 */
+		Runnable mVolumeUpLongPress = new Runnable() {
+			public void run() {
+			// set the long press flag to true
+			mIsLongPress = true;
 
-// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
-sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
-};
-};
+			// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
+			sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
+			};
+		};
 
-/**
- * When a volumedown-key longpress expires, skip songs based on key press
- */
-Runnable mVolumeDownLongPress = new Runnable() {
-public void run() {
-// set the long press flag to true
-mIsLongPress = true;
+		/**
+		 * When a volumedown-key longpress expires, skip songs based on key press
+		 */
+		Runnable mVolumeDownLongPress = new Runnable() {
+			public void run() {
+			// set the long press flag to true
+				mIsLongPress = true;
 
-// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
-sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-};
-};
+			// Shamelessly copied from Kmobs LockScreen controls, works for Pandora, etc...
+			sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+			};
+		};
 
-private void sendMediaButtonEvent(int code) {
-long eventtime = SystemClock.uptimeMillis();
+		
 
-Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0);
-downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-mContext.sendOrderedBroadcast(downIntent, null);
+		private void sendMediaButtonEvent(int code) {
+			long eventtime = SystemClock.uptimeMillis();
 
-Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, code, 0);
-upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
-mContext.sendOrderedBroadcast(upIntent, null);
-}
+			Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0);
+			downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+			mContext.sendOrderedBroadcast(downIntent, null);
 
-void handleVolumeLongPress(int keycode) {
-Runnable btnHandler;
-if (keycode == KeyEvent.KEYCODE_VOLUME_UP) {
-btnHandler = mVolumeUpLongPress;
-} else {
-btnHandler = mVolumeDownLongPress;
-}
-mHandler.postDelayed(btnHandler, ViewConfiguration.getLongPressTimeout());
-}
+			Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, code, 0);
+			upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+			mContext.sendOrderedBroadcast(upIntent, null);
+		}
 
-void handleVolumeLongPressAbort() {
-mHandler.removeCallbacks(mVolumeUpLongPress);
-mHandler.removeCallbacks(mVolumeDownLongPress);
-}
+		void handleVolumeLongPress(int keycode) {
+		Runnable btnHandler;
+			if (keycode == KeyEvent.KEYCODE_VOLUME_UP) {
+				btnHandler = mVolumeUpLongPress;
+			} else {
+				btnHandler = mVolumeDownLongPress;
+			}
+		mHandler.postDelayed(btnHandler, ViewConfiguration.getLongPressTimeout());
+		}
+
+		void handleVolumeLongPressAbort() {
+			mHandler.removeCallbacks(mVolumeUpLongPress);
+			mHandler.removeCallbacks(mVolumeDownLongPress);
+		}
 
 
 		private void interceptScreenshotChord() {
@@ -756,6 +765,34 @@ mHandler.removeCallbacks(mVolumeDownLongPress);
 		private final Runnable mScreenshotChordLongPress = new Runnable() {
 			public void run() {
 				takeScreenshot();
+			}
+		};
+
+		Runnable mBackLongPress = new Runnable() {
+			public void run() {
+				try {
+					performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+					IActivityManager mgr = ActivityManagerNative.getDefault();
+					List<RunningAppProcessInfo> apps = mgr.getRunningAppProcesses();
+					for (RunningAppProcessInfo appInfo : apps) {
+						int uid = appInfo.uid;
+						// Make sure it's a foreground user application (not system,
+						// root, phone, etc.)
+						if (uid >= Process.FIRST_APPLICATION_UID && uid <= Process.LAST_APPLICATION_UID
+								&& appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+							Toast.makeText(mContext, R.string.zzapp_killed_message, Toast.LENGTH_SHORT).show();
+							// Kill the entire pid
+							if (appInfo.pkgList!=null && (apps.size() > 0)){
+								mgr.forceStopPackage(appInfo.pkgList[0]);
+							} else {
+								Process.killProcess(appInfo.pid);
+							}
+							break;
+						}
+					}
+				} catch (RemoteException remoteException) {
+					// Do nothing; just let it go.
+				}
 			}
 		};
 
@@ -1044,15 +1081,17 @@ Settings.System.VOLBTN_MUSIC_CONTROLS, 1) == 1);
 int accelerometerDefault = Settings.System.getInt(resolver,
 Settings.System.ACCELEROMETER_ROTATION, DEFAULT_ACCELEROMETER_ROTATION);
 
-// set up rotation lock state
-mUserRotationMode = (accelerometerDefault == 0)
-? WindowManagerPolicy.USER_ROTATION_LOCKED
-: WindowManagerPolicy.USER_ROTATION_FREE;
-mUserRotation = Settings.System.getInt(resolver,
-Settings.System.USER_ROTATION,
-Surface.ROTATION_0);
-mEnableQuickTorch = Settings.System.getInt(resolver, Settings.System.ENABLE_FAST_TORCH,
-0) == 1;
+		// set up rotation lock state
+			mUserRotationMode = (accelerometerDefault == 0)
+			? WindowManagerPolicy.USER_ROTATION_LOCKED
+			: WindowManagerPolicy.USER_ROTATION_FREE;
+			mUserRotation = Settings.System.getInt(resolver,
+									Settings.System.USER_ROTATION,
+									Surface.ROTATION_0);
+			mEnableQuickTorch = Settings.System.getInt(resolver, Settings.System.ENABLE_FAST_TORCH,
+										0) == 1;
+			mUserRotationAngles = Settings.System.getInt(resolver,
+										   Settings.System.ACCELEROMETER_ROTATION_ANGLES, -1);
 
 boolean hasNavBarChanged = Settings.System.getInt(resolver, Settings.System.NAVIGATION_BAR_HIDE,	
 0) == 0;	
@@ -1556,102 +1595,106 @@ break;
 return WindowManagerImpl.ADD_OKAY;
 }
 
-/** {@inheritDoc} */
-public void removeWindowLw(WindowState win) {
-if (mStatusBar == win) {
-mStatusBar = null;
-} else if (mKeyguard == win) {
-mKeyguard = null;
-} else if (mNavigationBar == win) {
-mNavigationBar = null;
-} else {
-mStatusBarPanels.remove(win);
-}
-}
+	/** {@inheritDoc} */
+	public void removeWindowLw(WindowState win) {
+		if (mStatusBar == win) {
+			mStatusBar = null;
+		} else if (mKeyguard == win) {
+			mKeyguard = null;
+		} else if (mNavigationBar == win) {
+			mNavigationBar = null;
+		} else {
+			mStatusBarPanels.remove(win);
+		}
+	}
 
-static final boolean PRINT_ANIM = false;
+	static final boolean PRINT_ANIM = false;
 
-/** {@inheritDoc} */
-public int selectAnimationLw(WindowState win, int transit) {
-if (PRINT_ANIM) Log.i(TAG, "selectAnimation in " + win
-+ ": transit=" + transit);
-if (transit == TRANSIT_PREVIEW_DONE) {
-if (win.hasAppShownWindows()) {
-if (PRINT_ANIM) Log.i(TAG, "**** STARTING EXIT");
-return com.android.internal.R.anim.app_starting_exit;
-}
-}
+	/** {@inheritDoc} */
+	public int selectAnimationLw(WindowState win, int transit) {
+		if (PRINT_ANIM) Log.i(TAG, "selectAnimation in " + win
+				+ ": transit=" + transit);
+		if (transit == TRANSIT_PREVIEW_DONE) {
+			if (win.hasAppShownWindows()) {
+				if (PRINT_ANIM) Log.i(TAG, "**** STARTING EXIT");
+				return com.android.internal.R.anim.app_starting_exit;
+			}
+		}
 
-return 0;
-}
+		return 0;
+	}
 
-public Animation createForceHideEnterAnimation() {
-return AnimationUtils.loadAnimation(mContext,
-com.android.internal.R.anim.lock_screen_behind_enter);
-}
+	public Animation createForceHideEnterAnimation() {
+		return AnimationUtils.loadAnimation(mContext,
+			com.android.internal.R.anim.lock_screen_behind_enter);
+	}
 
-static ITelephony getTelephonyService() {
-ITelephony telephonyService = ITelephony.Stub.asInterface(
-ServiceManager.checkService(Context.TELEPHONY_SERVICE));
-if (telephonyService == null) {
-Log.w(TAG, "Unable to find ITelephony interface.");
-}
-return telephonyService;
-}
+	static ITelephony getTelephonyService() {
+		ITelephony telephonyService = ITelephony.Stub.asInterface(
+				ServiceManager.checkService(Context.TELEPHONY_SERVICE));
+		if (telephonyService == null) {
+			Log.w(TAG, "Unable to find ITelephony interface.");
+		}
+		return telephonyService;
+	}
 
-static IAudioService getAudioService() {
-IAudioService audioService = IAudioService.Stub.asInterface(
-ServiceManager.checkService(Context.AUDIO_SERVICE));
-if (audioService == null) {
-Log.w(TAG, "Unable to find IAudioService interface.");
-}
-return audioService;
-}
+	static IAudioService getAudioService() {
+		IAudioService audioService = IAudioService.Stub.asInterface(
+				ServiceManager.checkService(Context.AUDIO_SERVICE));
+		if (audioService == null) {
+			Log.w(TAG, "Unable to find IAudioService interface.");
+		}
+		return audioService;
+	}
 
-boolean keyguardOn() {
-return keyguardIsShowingTq() || inKeyguardRestrictedKeyInputMode();
-}
+	boolean keyguardOn() {
+		return keyguardIsShowingTq() || inKeyguardRestrictedKeyInputMode();
+	}
 
-private static final int[] WINDOW_TYPES_WHERE_HOME_DOESNT_WORK = {
-WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-WindowManager.LayoutParams.TYPE_SYSTEM_ERROR,
-};
+	private static final int[] WINDOW_TYPES_WHERE_HOME_DOESNT_WORK = {
+		WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+		WindowManager.LayoutParams.TYPE_SYSTEM_ERROR,
+	};
 
-/** {@inheritDoc} */
-@Override
-public long interceptKeyBeforeDispatching(WindowState win, KeyEvent event, int policyFlags) {
-final boolean keyguardOn = keyguardOn();
-final int keyCode = event.getKeyCode();
-final int repeatCount = event.getRepeatCount();
-final int metaState = event.getMetaState();
-final int flags = event.getFlags();
-final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
-final boolean canceled = event.isCanceled();
+	/** {@inheritDoc} */
+	@Override
+	public long interceptKeyBeforeDispatching(WindowState win, KeyEvent event, int policyFlags) {
+		final boolean keyguardOn = keyguardOn();
+		final int keyCode = event.getKeyCode();
+		final int repeatCount = event.getRepeatCount();
+		final int metaState = event.getMetaState();
+		final int flags = event.getFlags();
+		final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+		final boolean canceled = event.isCanceled();
 
-if (false) {
-Log.d(TAG, "interceptKeyTi keyCode=" + keyCode + " down=" + down + " repeatCount="
-+ repeatCount + " keyguardOn=" + keyguardOn + " mHomePressed=" + mHomePressed);
-}
+		if (false) {
+			Log.d(TAG, "interceptKeyTi keyCode=" + keyCode + " down=" + down + " repeatCount="
+				+ repeatCount + " keyguardOn=" + keyguardOn + " mHomePressed=" + mHomePressed);
+		}
 
-// If we think we might have a volume down & power key chord on the way
-// but we're not sure, then tell the dispatcher to wait a little while and
-// try again later before dispatching.
-if ((flags & KeyEvent.FLAG_FALLBACK) == 0) {
-if (mVolumeDownKeyTriggered && !mPowerKeyTriggered) {
-final long now = SystemClock.uptimeMillis();
-final long timeoutTime = mVolumeDownKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS;
-if (now < timeoutTime) {
-return timeoutTime - now;
-}
-}
-if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
-&& mVolumeDownKeyConsumedByScreenshotChord) {
-if (!down) {
-mVolumeDownKeyConsumedByScreenshotChord = false;
-}
-return -1;
-}
-}
+		// If we think we might have a volume down & power key chord on the way
+		// but we're not sure, then tell the dispatcher to wait a little while and
+		// try again later before dispatching.
+		if ((flags & KeyEvent.FLAG_FALLBACK) == 0) {
+			if (mVolumeDownKeyTriggered && !mPowerKeyTriggered) {
+				final long now = SystemClock.uptimeMillis();
+				final long timeoutTime = mVolumeDownKeyTime + SCREENSHOT_CHORD_DEBOUNCE_DELAY_MILLIS;
+				if (now < timeoutTime) {
+					return timeoutTime - now;
+				}
+			}
+			if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+				&& mVolumeDownKeyConsumedByScreenshotChord) {
+				if (!down) {
+					mVolumeDownKeyConsumedByScreenshotChord = false;
+				}
+				return -1;
+			}
+		}
+
+		if (keyCode == KeyEvent.KEYCODE_BACK && !down) {
+			mHandler.removeCallbacks(mBackLongPress);
+		}
 
 // First we always handle the home key here, so applications
 // can never break it, although if keyguard is on, we do let
@@ -1687,81 +1730,88 @@ Log.i(TAG, "Ignoring HOME; event canceled.");
 return -1;
 }
 
-// If a system window has focus, then it doesn't make sense
-// right now to interact with applications.
-WindowManager.LayoutParams attrs = win != null ? win.getAttrs() : null;
-if (attrs != null) {
-final int type = attrs.type;
-if (type == WindowManager.LayoutParams.TYPE_KEYGUARD
-|| type == WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG) {
-// the "app" is keyguard, so give it the key
-return 0;
-}
-final int typeCount = WINDOW_TYPES_WHERE_HOME_DOESNT_WORK.length;
-for (int i=0; i<typeCount; i++) {
-if (type == WINDOW_TYPES_WHERE_HOME_DOESNT_WORK[i]) {
-// don't do anything, but also don't pass it to the app
-return -1;
-}
-}
-}
+			// If a system window has focus, then it doesn't make sense
+			// right now to interact with applications.
+			WindowManager.LayoutParams attrs = win != null ? win.getAttrs() : null;
+			if (attrs != null) {
+				final int type = attrs.type;
+				if (type == WindowManager.LayoutParams.TYPE_KEYGUARD
+						|| type == WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG) {
+					// the "app" is keyguard, so give it the key
+					return 0;
+				}
+				final int typeCount = WINDOW_TYPES_WHERE_HOME_DOESNT_WORK.length;
+				for (int i=0; i<typeCount; i++) {
+					if (type == WINDOW_TYPES_WHERE_HOME_DOESNT_WORK[i]) {
+						// don't do anything, but also don't pass it to the app
+						return -1;
+					}
+				}
+			}
 
-if (down) {
-if (repeatCount == 0) {
-mHomePressed = true;
-} else if ((event.getFlags() & KeyEvent.FLAG_LONG_PRESS) != 0) {
-if (!keyguardOn) {
-handleLongPressOnHome();
-}
-}
-}
-return -1;
-} else if (keyCode == KeyEvent.KEYCODE_MENU) {
-// Hijack modified menu keys for debugging features
-final int chordBug = KeyEvent.META_SHIFT_ON;
+			if (down) {
+				if (repeatCount == 0) {
+					mHomePressed = true;
+				} else if ((event.getFlags() & KeyEvent.FLAG_LONG_PRESS) != 0) {
+					if (!keyguardOn) {
+						handleLongPressOnHome();
+					}
+				}
+			}
+			return -1;
+		} else if (keyCode == KeyEvent.KEYCODE_MENU) {
+			// Hijack modified menu keys for debugging features
+			final int chordBug = KeyEvent.META_SHIFT_ON;
 
-if (down && repeatCount == 0) {
-if (mEnableShiftMenuBugReports && (metaState & chordBug) == chordBug) {
-Intent intent = new Intent(Intent.ACTION_BUG_REPORT);
-mContext.sendOrderedBroadcast(intent, null);
-return -1;
-} else if (SHOW_PROCESSES_ON_ALT_MENU &&
-(metaState & KeyEvent.META_ALT_ON) == KeyEvent.META_ALT_ON) {
-Intent service = new Intent();
-service.setClassName(mContext, "com.android.server.LoadAverageService");
-ContentResolver res = mContext.getContentResolver();
-boolean shown = Settings.System.getInt(
-res, Settings.System.SHOW_PROCESSES, 0) != 0;
-if (!shown) {
-mContext.startService(service);
-} else {
-mContext.stopService(service);
-}
-Settings.System.putInt(
-res, Settings.System.SHOW_PROCESSES, shown ? 0 : 1);
-return -1;
-}
-}
-} else if (keyCode == KeyEvent.KEYCODE_SEARCH) {
-if (down) {
-if (repeatCount == 0) {
-mShortcutKeyPressed = keyCode;
-mConsumeShortcutKeyUp = false;
-}
-} else if (keyCode == mShortcutKeyPressed) {
-mShortcutKeyPressed = -1;
-if (mConsumeShortcutKeyUp) {
-mConsumeShortcutKeyUp = false;
-return -1;
-}
-}
-return 0;
-} else if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
-if (down && repeatCount == 0) {
-showOrHideRecentAppsDialog(RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS);
-}
-return -1;
-}
+			if (down && repeatCount == 0) {
+				if (mEnableShiftMenuBugReports && (metaState & chordBug) == chordBug) {
+					Intent intent = new Intent(Intent.ACTION_BUG_REPORT);
+					mContext.sendOrderedBroadcast(intent, null);
+					return -1;
+				} else if (SHOW_PROCESSES_ON_ALT_MENU &&
+					(metaState & KeyEvent.META_ALT_ON) == KeyEvent.META_ALT_ON) {
+					Intent service = new Intent();
+					service.setClassName(mContext, "com.android.server.LoadAverageService");
+					ContentResolver res = mContext.getContentResolver();
+					boolean shown = Settings.System.getInt(
+						res, Settings.System.SHOW_PROCESSES, 0) != 0;
+					if (!shown) {
+						mContext.startService(service);
+					} else {
+						mContext.stopService(service);
+					}
+					Settings.System.putInt(
+						res, Settings.System.SHOW_PROCESSES, shown ? 0 : 1);
+					return -1;
+					}
+				}
+			} else if (keyCode == KeyEvent.KEYCODE_SEARCH) {
+				if (down) {
+					if (repeatCount == 0) {
+						mShortcutKeyPressed = keyCode;
+						mConsumeShortcutKeyUp = false;
+					}
+				} else if (keyCode == mShortcutKeyPressed) {
+					mShortcutKeyPressed = -1;
+					if (mConsumeShortcutKeyUp) {
+						mConsumeShortcutKeyUp = false;
+						return -1;
+					}
+				}
+				return 0;
+			} else if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
+				if (down && repeatCount == 0) {
+					showOrHideRecentAppsDialog(RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS);
+				}
+			return -1;
+			} else if (keyCode == KeyEvent.KEYCODE_BACK) {
+				if (Settings.Secure.getInt(mContext.getContentResolver(),
+						Settings.Secure.KILL_APP_LONGPRESS_BACK, 0) == 1) {
+					if (down && repeatCount == 0) {
+						mHandler.postDelayed(mBackLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+					}
+				}
+			}
 
 // Shortcuts are invoked through Search+key, so intercept those here
 // Any printing key that is chorded with Search should be consumed
@@ -3378,9 +3428,30 @@ if (mAllowAllRotations < 0) {
 mAllowAllRotations = mContext.getResources().getBoolean(
 com.android.internal.R.bool.config_allowAllRotations) ? 1 : 0;
 }
-if (sensorRotation != Surface.ROTATION_180
-|| mAllowAllRotations == 1
-|| orientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR) {
+// Rotation setting bitmask
+// 1=0 2=90 4=180 8=270
+boolean allowed = true;
+if (mUserRotationAngles < 0) {
+// Not set by user so use these defaults
+mUserRotationAngles = mAllowAllRotations == 1 ?
+(1 | 2 | 4 | 8) : // All angles
+(1 | 2 | 8); // All except 180
+}
+switch (sensorRotation) {
+case Surface.ROTATION_0:
+allowed = (mUserRotationAngles & 1) != 0;
+break;
+case Surface.ROTATION_90:
+allowed = (mUserRotationAngles & 2) != 0;
+break;
+case Surface.ROTATION_180:
+allowed = (mUserRotationAngles & 4) != 0;
+break;
+case Surface.ROTATION_270:
+allowed = (mUserRotationAngles & 8) != 0;
+break;
+}
+if (allowed) {
 preferredRotation = sensorRotation;
 } else {
 preferredRotation = lastRotation;

@@ -27,20 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 
-private String mAssetDir;
-private String mAppName;
-
-private boolean mThemeSupport;
-private String mThemePackageName;
-private int mThemeCookie;
-
-/**
- * Organize all added redirection maps using Java strong references to keep
- * the native layer cleanup simple (that is, finalize() in Java will be
- * responsible for delete in C++).
- */
-private SparseArray<PackageRedirectionMap> mRedirections;
-
 /**
  * Provides access to an application's raw asset files; see {@link Resources}
  * for the way most applications will want to retrieve their resource data.
@@ -92,6 +78,21 @@ public final class AssetManager {
     private int mNumRefs = 1;
     private boolean mOpen = true;
     private HashMap<Integer, RuntimeException> mRefStacks; 
+	
+	private String mAssetDir;
+	private String mAppName;
+	
+	private boolean mThemeSupport;
+	private String mThemePackageName;
+	private int mThemeCookie;
+	
+	/**
+	 * Organize all added redirection maps using Java strong references to keep
+	 * the native layer cleanup simple (that is, finalize() in Java will be
+	 * responsible for delete in C++).
+	 */
+	private SparseArray<PackageRedirectionMap> mRedirections;
+	
  
     /**
      * Create a new AssetManager containing only the basic system assets.

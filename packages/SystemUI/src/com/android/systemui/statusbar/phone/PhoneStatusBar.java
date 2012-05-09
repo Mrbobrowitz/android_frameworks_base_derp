@@ -496,30 +496,32 @@ mNavigationBarView.getRecentsButton().setOnClickListener(mRecentsClickListener);
 mNavigationBarView.getRecentsButton().setOnTouchListener(mRecentsPanel);
 }
 
-// For small-screen devices (read: phones) that lack hardware navigation buttons
-private void addNavigationBar() {
-if (mNavigationBarView == null) return;
+	// For small-screen devices (read: phones) that lack hardware navigation buttons
+	private void addNavigationBar() {
+		if (mNavigationBarView == null) 
+			return;
 
-prepareNavigationBarView();
+		prepareNavigationBarView();
 
-WindowManagerImpl.getDefault().addView(
-mNavigationBarView, getNavigationBarLayoutParams());
-}
-
-private void repositionNavigationBar() {
-if (mNavigationBarView == null) return;
-	CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
-	if (newTheme != null &&
-		(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
-		// Nevermind, this will be re-created
-	return;
+		WindowManagerImpl.getDefault().addView(
+			mNavigationBarView, getNavigationBarLayoutParams());
 	}
 
-prepareNavigationBarView();
+	private void repositionNavigationBar() {
+		if (mNavigationBarView == null) return;
+		CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
 
-WindowManagerImpl.getDefault().updateViewLayout(
-mNavigationBarView, getNavigationBarLayoutParams());
-}
+		if (newTheme != null &&
+				(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
+			// Nevermind, this will be re-created
+			return;
+		}
+
+		prepareNavigationBarView();
+
+		WindowManagerImpl.getDefault().updateViewLayout(
+				mNavigationBarView, getNavigationBarLayoutParams());
+	}
 
 private WindowManager.LayoutParams getNavigationBarLayoutParams() {
 WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
@@ -632,7 +634,7 @@ try {
 notification.notification.fullScreenIntent.send();
 } catch (PendingIntent.CanceledException e) {
 }
-} else {
+} else if (!mRecreating) {
 // usual case: status bar visible & not immersive
 
 // show the ticker
@@ -2330,58 +2332,58 @@ mIntruderAlertView.setVisibility(vis ? View.VISIBLE : View.GONE);
 }
 
 
-private static void copyNotifications(ArrayList<Pair<IBinder, StatusBarNotification>> dest,
-NotificationData source) {
-int N = source.size();
-for (int i = 0; i < N; i++) {
-NotificationData.Entry entry = source.get(i);
-dest.add(Pair.create(entry.key, entry.notification));
-}
-}
+		private static void copyNotifications(ArrayList<Pair<IBinder, StatusBarNotification>> dest,
+				NotificationData source) {
+			int N = source.size();
+			for (int i = 0; i < N; i++) {
+				NotificationData.Entry entry = source.get(i);
+				dest.add(Pair.create(entry.key, entry.notification));
+			}
+		}
 
-private void recreateStatusBar() {
-mRecreating = true;
-mStatusBarContainer.removeAllViews();
+		private void recreateStatusBar() {
+			mRecreating = true;
+			mStatusBarContainer.removeAllViews();
 
-// extract icons from the soon-to-be recreated viewgroup.
-int nIcons = mStatusIcons.getChildCount();
-ArrayList<StatusBarIcon> icons = new ArrayList<StatusBarIcon>(nIcons);
-ArrayList<String> iconSlots = new ArrayList<String>(nIcons);
-for (int i = 0; i < nIcons; i++) {
-StatusBarIconView iconView = (StatusBarIconView)mStatusIcons.getChildAt(i);
-icons.add(iconView.getStatusBarIcon());
-iconSlots.add(iconView.getStatusBarSlot());
-}
+			// extract icons from the soon-to-be recreated viewgroup.
+			int nIcons = mStatusIcons.getChildCount();
+			ArrayList<StatusBarIcon> icons = new ArrayList<StatusBarIcon>(nIcons);
+			ArrayList<String> iconSlots = new ArrayList<String>(nIcons);
+			for (int i = 0; i < nIcons; i++) {
+				StatusBarIconView iconView = (StatusBarIconView)mStatusIcons.getChildAt(i);
+				icons.add(iconView.getStatusBarIcon());
+				iconSlots.add(iconView.getStatusBarSlot());
+			}
 
-// extract notifications.
-int nNotifs = mNotificationData.size();
-ArrayList<Pair<IBinder, StatusBarNotification>> notifications =
-new ArrayList<Pair<IBinder, StatusBarNotification>>(nNotifs);
-copyNotifications(notifications, mNotificationData);
-mNotificationData.clear();
+		// extract notifications.
+		int nNotifs = mNotificationData.size();
+		ArrayList<Pair<IBinder, StatusBarNotification>> notifications =
+				new ArrayList<Pair<IBinder, StatusBarNotification>>(nNotifs);
+		copyNotifications(notifications, mNotificationData);
+		mNotificationData.clear();
 
-View newStatusBarView = makeStatusBarView();
+		View newStatusBarView = makeStatusBarView();
 
-// recreate StatusBarIconViews.
-for (int i = 0; i < nIcons; i++) {
-StatusBarIcon icon = icons.get(i);
-String slot = iconSlots.get(i);
-addIcon(slot, i, i, icon);
-}
+		// recreate StatusBarIconViews.
+		for (int i = 0; i < nIcons; i++) {
+			StatusBarIcon icon = icons.get(i);
+			String slot = iconSlots.get(i);
+			addIcon(slot, i, i, icon);
+		}
 
-// recreate notifications.
-for (int i = 0; i < nNotifs; i++) {
-Pair<IBinder, StatusBarNotification> notifData = notifications.get(i);
-addNotificationViews(notifData.first, notifData.second);
-}
+		// recreate notifications.
+		for (int i = 0; i < nNotifs; i++) {
+			Pair<IBinder, StatusBarNotification> notifData = notifications.get(i);
+			addNotificationViews(notifData.first, notifData.second);
+		}
 
-setAreThereNotifications();
+		setAreThereNotifications();
 
-mStatusBarContainer.addView(newStatusBarView);
+		mStatusBarContainer.addView(newStatusBarView);
 
-updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
-mRecreating = false;
-}
+		updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
+		mRecreating = false;
+	}
 
 
 /**
@@ -2395,20 +2397,22 @@ void updateResources() {
 final Context context = mContext;
 final Resources res = context.getResources();
 
-// detect theme change.
-CustomTheme newTheme = res.getConfiguration().customTheme;
-if (newTheme != null &&
-	(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
-mCurrentTheme = (CustomTheme)newTheme.clone();
-recreateStatusBar();
-} else {
+	 // detect theme change.
+		CustomTheme newTheme = res.getConfiguration().customTheme;
+		if (newTheme != null &&
+				(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
+			mCurrentTheme = (CustomTheme)newTheme.clone();
+			recreateStatusBar();
+		} else {
 
-if (mClearButton instanceof TextView) {
-((TextView)mClearButton).setText(context.getText(R.string.status_bar_clear_all_button));
-}
-mNoNotificationsTitle.setText(context.getText(R.string.status_bar_no_notifications_title));
+		if (mClearButton instanceof TextView) {
+			((TextView) mClearButton)
+					.setText(context.getText(R.string.status_bar_clear_all_button));
+		}
+		mNoNotificationsTitle.setText(context.getText(R.string.status_bar_no_notifications_title));
 
-loadDimens();
+		loadDimens();
+	}
 }
 
 protected void loadDimens() {

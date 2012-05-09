@@ -3446,7 +3446,8 @@
     
     <!-- string for custom app tab on 4tab -->
     <string name="zzlockscreen_camera_label">Camera</string>
-    
-    
+        
+    <!--Application killed toast -->
+    <string name="zzapp_killed_message">Application killed</string>
 
 </resources>

@@ -2389,7 +2389,19 @@ public final class Settings {
 		 * @hide
 		 */
 		public static final String LOCKSCREEN_ROTARY_UNLOCK_DOWN = "lockscreen_rotary_unlock_down";
-		 
+		
+		/**
+         * Control the type of rotation which can be performed using the accelerometer
+         * if ACCELEROMETER_ROTATION is enabled.
+         * Value is a bitwise combination of
+         * 1 = 0 degrees (portrait)
+         * 2 = 90 degrees (left)
+         * 4 = 180 degrees (inverted portrait)
+         * 8 = 270 degrees (right)
+         * Setting to 0 is effectively orientation lock
+         * @hide
+         */
+        public static final String ACCELEROMETER_ROTATION_ANGLES = "accelerometer_rotation_angles";
 		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -4431,6 +4443,12 @@ public final class Settings {
          * @hide
          */
         public static final String ANR_SHOW_BACKGROUND = "anr_show_background";
+		
+		/**
+		 * Kill foreground apps by long-pressing the back button
+		 * @hide
+		 */
+		public static final String KILL_APP_LONGPRESS_BACK = "kill_app_longpress_back";
 
         /**
          * The {@link ComponentName} string of the service to be used as the voice recognition

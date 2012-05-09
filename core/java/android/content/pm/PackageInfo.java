@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +30,7 @@ public class PackageInfo implements Parcelable {
      * attribute.
      */
     public String packageName;
-
+	
     /**
      * The version number of this package, as specified by the &lt;manifest&gt;
      * tag's {@link android.R.styleable#AndroidManifest_versionCode versionCode}
@@ -69,19 +70,19 @@ public class PackageInfo implements Parcelable {
      * per {@link System#currentTimeMillis()}.
      */
     public long firstInstallTime;
-
+	
     /**
      * The time at which the app was last updated.  Units are as
      * per {@link System#currentTimeMillis()}.
      */
     public long lastUpdateTime;
-
+	
     /**
      * All kernel group-IDs that have been assigned to this package.
      * This is only filled in if the flag {@link PackageManager#GET_GIDS} was set.
      */
     public int[] gids;
-
+	
     /**
      * Array of all {@link android.R.styleable#AndroidManifestActivity
      * &lt;activity&gt;} tags included under &lt;application&gt;,
@@ -89,7 +90,7 @@ public class PackageInfo implements Parcelable {
      * {@link PackageManager#GET_ACTIVITIES} was set.
      */
     public ActivityInfo[] activities;
-
+	
     /**
      * Array of all {@link android.R.styleable#AndroidManifestReceiver
      * &lt;receiver&gt;} tags included under &lt;application&gt;,
@@ -97,7 +98,7 @@ public class PackageInfo implements Parcelable {
      * {@link PackageManager#GET_RECEIVERS} was set.
      */
     public ActivityInfo[] receivers;
-
+	
     /**
      * Array of all {@link android.R.styleable#AndroidManifestService
      * &lt;service&gt;} tags included under &lt;application&gt;,
@@ -105,7 +106,7 @@ public class PackageInfo implements Parcelable {
      * {@link PackageManager#GET_SERVICES} was set.
      */
     public ServiceInfo[] services;
-
+	
     /**
      * Array of all {@link android.R.styleable#AndroidManifestProvider
      * &lt;provider&gt;} tags included under &lt;application&gt;,
@@ -113,7 +114,7 @@ public class PackageInfo implements Parcelable {
      * {@link PackageManager#GET_PROVIDERS} was set.
      */
     public ProviderInfo[] providers;
-
+	
     /**
      * Array of all {@link android.R.styleable#AndroidManifestInstrumentation
      * &lt;instrumentation&gt;} tags included under &lt;manifest&gt;,
@@ -154,12 +155,12 @@ public class PackageInfo implements Parcelable {
      * {@link PackageManager#GET_CONFIGURATIONS} was set.  
      */
     public ConfigurationInfo[] configPreferences;
-
+	
     /**
      * The features that this application has said it requires.
      */
     public FeatureInfo[] reqFeatures;
-
+	
     /**
      * Constant corresponding to <code>auto</code> in
      * the {@link android.R.attr#installLocation} attribute.
@@ -194,19 +195,79 @@ public class PackageInfo implements Parcelable {
      */
     public int installLocation = INSTALL_LOCATION_INTERNAL_ONLY;
     
+    // Is Theme Apk
+    /**
+     * {@hide}
+     */
+    public boolean isThemeApk = false;
+	
+    // ThemeInfo
+    /**
+     * {@hide}
+     */
+    public ThemeInfo [] themeInfos;
+	
     public PackageInfo() {
     }
-
+	
+    /*
+     * Is Theme Apk is DRM protected (contains DRM-protected resources)
+     *
+     */
+    private boolean drmProtectedThemeApk = false;
+	
+    /**
+     * @hide
+     *
+     * @return Is Theme Apk is DRM protected (contains DRM-protected resources)
+     */
+    public boolean isDrmProtectedThemeApk() {
+        return drmProtectedThemeApk;
+    }
+	
+    /**
+     * @hide
+     *
+     * @param value if Theme Apk is DRM protected (contains DRM-protected resources)
+     */
+    public void setDrmProtectedThemeApk(boolean value) {
+        drmProtectedThemeApk = value;
+    }
+	
+    /*
+     * If isThemeApk and isDrmProtectedThemeApk are true - path to hidden locked zip file
+     *
+     */
+    private String lockedZipFilePath;
+	
+    /**
+     * @hide
+     *
+     * @return path for hidden locked zip file
+     */
+    public String getLockedZipFilePath() {
+        return lockedZipFilePath;
+    }
+	
+    /**
+     * @hide
+     *
+     * @param value path for hidden locked zip file
+     */
+    public void setLockedZipFilePath(String value) {
+        lockedZipFilePath = value;
+    }
+	
     public String toString() {
         return "PackageInfo{"
-            + Integer.toHexString(System.identityHashCode(this))
-            + " " + packageName + "}";
+		+ Integer.toHexString(System.identityHashCode(this))
+		+ " " + packageName + "}";
     }
-
+	
     public int describeContents() {
         return 0;
     }
-
+	
     public void writeToParcel(Parcel dest, int parcelableFlags) {
         dest.writeString(packageName);
         dest.writeInt(versionCode);
@@ -233,42 +294,54 @@ public class PackageInfo implements Parcelable {
         dest.writeTypedArray(configPreferences, parcelableFlags);
         dest.writeTypedArray(reqFeatures, parcelableFlags);
         dest.writeInt(installLocation);
+		
+        /* Theme-specific. */
+        dest.writeInt((isThemeApk)? 1 : 0);
+        dest.writeInt((drmProtectedThemeApk)? 1 : 0);
+        dest.writeTypedArray(themeInfos, parcelableFlags);
+        dest.writeString(lockedZipFilePath);
     }
-
+	
     public static final Parcelable.Creator<PackageInfo> CREATOR
-            = new Parcelable.Creator<PackageInfo>() {
-        public PackageInfo createFromParcel(Parcel source) {
-            return new PackageInfo(source);
-        }
+			= new Parcelable.Creator<PackageInfo>() {
+		public PackageInfo createFromParcel(Parcel source) {
+			return new PackageInfo(source);
+		}
 
-        public PackageInfo[] newArray(int size) {
-            return new PackageInfo[size];
-        }
-    };
+		public PackageInfo[] newArray(int size) {
+			return new PackageInfo[size];
+		}
+	};
 
-    private PackageInfo(Parcel source) {
-        packageName = source.readString();
-        versionCode = source.readInt();
-        versionName = source.readString();
-        sharedUserId = source.readString();
-        sharedUserLabel = source.readInt();
-        int hasApp = source.readInt();
-        if (hasApp != 0) {
-            applicationInfo = ApplicationInfo.CREATOR.createFromParcel(source);
-        }
-        firstInstallTime = source.readLong();
-        lastUpdateTime = source.readLong();
-        gids = source.createIntArray();
-        activities = source.createTypedArray(ActivityInfo.CREATOR);
-        receivers = source.createTypedArray(ActivityInfo.CREATOR);
-        services = source.createTypedArray(ServiceInfo.CREATOR);
-        providers = source.createTypedArray(ProviderInfo.CREATOR);
-        instrumentation = source.createTypedArray(InstrumentationInfo.CREATOR);
-        permissions = source.createTypedArray(PermissionInfo.CREATOR);
-        requestedPermissions = source.createStringArray();
-        signatures = source.createTypedArray(Signature.CREATOR);
-        configPreferences = source.createTypedArray(ConfigurationInfo.CREATOR);
-        reqFeatures = source.createTypedArray(FeatureInfo.CREATOR);
-        installLocation = source.readInt();
-    }
+	private PackageInfo(Parcel source) {
+		packageName = source.readString();
+		versionCode = source.readInt();
+		versionName = source.readString();
+		sharedUserId = source.readString();
+		sharedUserLabel = source.readInt();
+		int hasApp = source.readInt();
+		if (hasApp != 0) {
+			applicationInfo = ApplicationInfo.CREATOR.createFromParcel(source);
+		}
+		firstInstallTime = source.readLong();
+		lastUpdateTime = source.readLong();
+		gids = source.createIntArray();
+		activities = source.createTypedArray(ActivityInfo.CREATOR);
+		receivers = source.createTypedArray(ActivityInfo.CREATOR);
+		services = source.createTypedArray(ServiceInfo.CREATOR);
+		providers = source.createTypedArray(ProviderInfo.CREATOR);
+		instrumentation = source.createTypedArray(InstrumentationInfo.CREATOR);
+		permissions = source.createTypedArray(PermissionInfo.CREATOR);
+		requestedPermissions = source.createStringArray();
+		signatures = source.createTypedArray(Signature.CREATOR);
+		configPreferences = source.createTypedArray(ConfigurationInfo.CREATOR);
+		reqFeatures = source.createTypedArray(FeatureInfo.CREATOR);
+		installLocation = source.readInt();
+
+		/* Theme-specific. */
+		isThemeApk = (source.readInt() != 0);
+		drmProtectedThemeApk = (source.readInt() != 0);
+		themeInfos = source.createTypedArray(ThemeInfo.CREATOR);
+		lockedZipFilePath = source.readString();
+	}
 }

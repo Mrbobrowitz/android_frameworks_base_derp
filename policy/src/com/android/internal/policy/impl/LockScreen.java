@@ -150,6 +150,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	private String mCustomThree = (Settings.System.getString(
 														   mContext.getContentResolver(),
 														   Settings.System.LOCKSCREEN_CUSTOM_THREE));
+	
 	private Drawable customAppIcon1;
 	private Drawable customAppIcon2;
 	private Drawable customAppIcon3;
@@ -507,7 +508,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 					if (mCustomThree != null) {
 						runActivity(mCustomThree);
 					}
-					} else if (target == 4) { //4 = Camera/Sound toggle
+				} else if (target == 4) { //4 = Camera/Sound toggle
 					if (!mCameraDisabled) {
 						// Start the Camera
 						Intent intent = new Intent(
@@ -538,6 +539,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 						toggleRingMode();
 						mUnlockWidgetMethods.updateResources();
 						mCallback.pokeWakelock();
+						
 					}
 				}
 			}
@@ -916,12 +918,14 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			Drawable d2 = array.getDrawable(2);
 			icons[2] = d2;
 		}
+		
 		if (customAppIcon3 != null) {
 			icons[3] = customAppIcon3;
 		} else {
 			Drawable d3 = array.getDrawable(3);
 			icons[3] = d3;
 		}
+		
 		for (int i = 4; i < 8; i++) {
 			Drawable d = array.getDrawable(i);
 			icons[i] = d;
@@ -929,7 +933,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 		
 		return icons;
 	}
-	
+
 	/**
 	 * @param context
 	 *            Used to setup the view.
@@ -944,9 +948,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	 * @param callback
 	 *            Used to communicate back to the host keyguard view.
 	 */
-	LockScreen(Context context, Configuration configuration,
-			   LockPatternUtils lockPatternUtils,
-			   KeyguardUpdateMonitor updateMonitor, KeyguardScreenCallback callback) {
+	LockScreen(Context context, Configuration configuration, LockPatternUtils lockPatternUtils, KeyguardUpdateMonitor updateMonitor, KeyguardScreenCallback callback) {
 		super(context);
 		mLockPatternUtils = lockPatternUtils;
 		mUpdateMonitor = updateMonitor;

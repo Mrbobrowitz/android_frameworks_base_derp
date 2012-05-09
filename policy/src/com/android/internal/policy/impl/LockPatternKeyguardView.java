@@ -591,7 +591,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 				&& !backupIsTimedOut) {
 			bindToFaceLock();
 
-			// Show FaceLock area, but only for a little bit so lockpattern will become visible if
+			// Show FaceLock area, but only for a little bit so lockpattern will 
+            // become visible if
 			// FaceLock fails to start or crashes
 			showFaceLockAreaWithTimeout(FACELOCK_VIEW_AREA_SERVICE_TIMEOUT);
 
@@ -1302,7 +1303,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 				faceLockPosition = new int[2];
 				mFaceLockAreaView.getLocationInWindow(faceLockPosition);
                 startFaceLock(mFaceLockAreaView.getWindowToken(),
-                        mFaceLockAreaView.getLeft(), mFaceLockAreaView.getTop(),
+                        faceLockPosition[0], faceLockPosition[1],
                         mFaceLockAreaView.getWidth(), mFaceLockAreaView.getHeight());
             }
         }
@@ -1369,7 +1370,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         public void unlock() {
             if (DEBUG) Log.d(TAG, "FaceLock unlock()");
             showFaceLockArea(); // Keep fallback covered
-            stopFaceLock();
+            stopAndUnbindFromFaceLock();
 
             mKeyguardScreenCallback.keyguardDone(true);
             mKeyguardScreenCallback.reportSuccessfulUnlockAttempt();
@@ -1381,7 +1382,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         public void cancel() {
             if (DEBUG) Log.d(TAG, "FaceLock cancel()");
             hideFaceLockArea(); // Expose fallback
-            stopFaceLock();
+            stopAndUnbindFromFaceLock();
             mKeyguardScreenCallback.pokeWakelock(BACKUP_LOCK_TIMEOUT);
         }
 
@@ -1392,7 +1393,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
             if (DEBUG) Log.d(TAG, "FaceLock reportFailedAttempt()");
             mFailedFaceUnlockAttempts++;
             hideFaceLockArea(); // Expose fallback
-            stopFaceLock();
+            stopAndUnbindFromFaceLock();
             mKeyguardScreenCallback.pokeWakelock(BACKUP_LOCK_TIMEOUT);
         }
 

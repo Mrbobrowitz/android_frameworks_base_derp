@@ -217,6 +217,10 @@ public class StatusBarIconView extends AnimatedImageView {
             event.setParcelableData(mNotification);
         }
     }
+	
+	public String getStatusBarSlot() {
+		return mSlot;
+	}
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {

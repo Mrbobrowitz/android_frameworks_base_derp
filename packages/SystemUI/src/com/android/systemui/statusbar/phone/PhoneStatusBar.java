@@ -32,6 +32,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.content.res.Configuration;
+import android.content.res.CustomTheme;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -47,6 +48,7 @@ import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Slog;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.IWindowManager;
@@ -64,6 +66,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -231,6 +234,11 @@ public class PhoneStatusBar extends StatusBar {
     int[] mAbsPos = new int[2];
     Runnable mPostCollapseCleanup = null;
 	
+	// last theme that was applied in order to detect theme change (as opposed
+	// to some other configuration change).
+	CustomTheme mCurrentTheme;
+	private boolean mRecreating = false;
+	
 	LinearLayout mCenterClockLayout;
 	
     // for disabling the status bar
@@ -266,7 +274,11 @@ public class PhoneStatusBar extends StatusBar {
 		.getDefaultDisplay();
 		
         mWindowManager = IWindowManager.Stub.asInterface(
-														 ServiceManager.getService(Context.WINDOW_SERVICE));
+					ServiceManager.getService(Context.WINDOW_SERVICE));
+		CustomTheme currentTheme = mContext.getResources().getConfiguration().customTheme;
+		if (currentTheme != null) {
+			mCurrentTheme = (CustomTheme)currentTheme.clone();
+		}
 		
         super.start(); // calls makeStatusBarView()
 		
@@ -330,6 +342,11 @@ public class PhoneStatusBar extends StatusBar {
 		mCarrier = (CarrierLabelTop) sb.findViewById(R.id.carriertop);
 		mCarrierSpace = (LinearLayout) sb.findViewById(R.id.carriertopspace);
         mTickerView = sb.findViewById(R.id.ticker);
+		
+		/* Destroy the old widget before recreating the expanded dialog
+		 to make sure there are no context issues */
+		if (mRecreating)
+			mPowerWidget.destroyWidget();
 		
         mExpandedDialog = new ExpandedDialog(context);
         mExpandedView = expanded;
@@ -491,6 +508,12 @@ mNavigationBarView, getNavigationBarLayoutParams());
 
 private void repositionNavigationBar() {
 if (mNavigationBarView == null) return;
+	CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
+	if (newTheme != null &&
+		(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
+		// Nevermind, this will be re-created
+	return;
+	}
 
 prepareNavigationBarView();
 
@@ -1938,6 +1961,10 @@ mTrackingParams = lp;
 WindowManagerImpl.getDefault().addView(mTrackingView, lp);
 }
 
+void onBarViewDetached() {
+	WindowManagerImpl.getDefault().removeView(mTrackingView);
+}
+
 void onTrackingViewAttached() {
 WindowManager.LayoutParams lp;
 int pixelFormat;
@@ -1973,6 +2000,8 @@ mExpandedDialog.getWindow().setBackgroundDrawable(null);
 mExpandedDialog.show();
 }
 
+void onTrackingViewDetached() {
+}
 void setNotificationIconVisibility(boolean visible, int anim) {
 int old = mNotificationIcons.getVisibility();
 int v = visible ? View.VISIBLE : View.INVISIBLE;
@@ -2107,6 +2136,7 @@ mDisplay.getMetrics(mDisplayMetrics);
 if (DEBUG) {
 Slog.d(TAG, "updateDisplaySize: " + mDisplayMetrics);
 }
+if (!mRecreating)
 updateExpandedSize();
 }
 
@@ -2299,6 +2329,61 @@ private void setIntruderAlertVisibility(boolean vis) {
 mIntruderAlertView.setVisibility(vis ? View.VISIBLE : View.GONE);
 }
 
+
+private static void copyNotifications(ArrayList<Pair<IBinder, StatusBarNotification>> dest,
+NotificationData source) {
+int N = source.size();
+for (int i = 0; i < N; i++) {
+NotificationData.Entry entry = source.get(i);
+dest.add(Pair.create(entry.key, entry.notification));
+}
+}
+
+private void recreateStatusBar() {
+mRecreating = true;
+mStatusBarContainer.removeAllViews();
+
+// extract icons from the soon-to-be recreated viewgroup.
+int nIcons = mStatusIcons.getChildCount();
+ArrayList<StatusBarIcon> icons = new ArrayList<StatusBarIcon>(nIcons);
+ArrayList<String> iconSlots = new ArrayList<String>(nIcons);
+for (int i = 0; i < nIcons; i++) {
+StatusBarIconView iconView = (StatusBarIconView)mStatusIcons.getChildAt(i);
+icons.add(iconView.getStatusBarIcon());
+iconSlots.add(iconView.getStatusBarSlot());
+}
+
+// extract notifications.
+int nNotifs = mNotificationData.size();
+ArrayList<Pair<IBinder, StatusBarNotification>> notifications =
+new ArrayList<Pair<IBinder, StatusBarNotification>>(nNotifs);
+copyNotifications(notifications, mNotificationData);
+mNotificationData.clear();
+
+View newStatusBarView = makeStatusBarView();
+
+// recreate StatusBarIconViews.
+for (int i = 0; i < nIcons; i++) {
+StatusBarIcon icon = icons.get(i);
+String slot = iconSlots.get(i);
+addIcon(slot, i, i, icon);
+}
+
+// recreate notifications.
+for (int i = 0; i < nNotifs; i++) {
+Pair<IBinder, StatusBarNotification> notifData = notifications.get(i);
+addNotificationViews(notifData.first, notifData.second);
+}
+
+setAreThereNotifications();
+
+mStatusBarContainer.addView(newStatusBarView);
+
+updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
+mRecreating = false;
+}
+
+
 /**
  * Reload some of our resources when the configuration changes.
  *
@@ -2309,6 +2394,14 @@ mIntruderAlertView.setVisibility(vis ? View.VISIBLE : View.GONE);
 void updateResources() {
 final Context context = mContext;
 final Resources res = context.getResources();
+
+// detect theme change.
+CustomTheme newTheme = res.getConfiguration().customTheme;
+if (newTheme != null &&
+	(mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
+mCurrentTheme = (CustomTheme)newTheme.clone();
+recreateStatusBar();
+} else {
 
 if (mClearButton instanceof TextView) {
 ((TextView)mClearButton).setText(context.getText(R.string.status_bar_clear_all_button));

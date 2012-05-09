@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +21,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.provider.DrmStore;
 import android.provider.MediaStore;
@@ -42,36 +41,36 @@ import java.io.IOException;
  */
 public class Ringtone {
     private static String TAG = "Ringtone";
-
+	
     private static final String[] MEDIA_COLUMNS = new String[] {
-        MediaStore.Audio.Media._ID,
-        MediaStore.Audio.Media.DATA,
-        MediaStore.Audio.Media.TITLE
+	MediaStore.Audio.Media._ID,
+	MediaStore.Audio.Media.DATA,
+	MediaStore.Audio.Media.TITLE
     };
-
+	
     private static final String[] DRM_COLUMNS = new String[] {
-        DrmStore.Audio._ID,
-        DrmStore.Audio.DATA,
-        DrmStore.Audio.TITLE
+	DrmStore.Audio._ID,
+	DrmStore.Audio.DATA,
+	DrmStore.Audio.TITLE
     };
-
+	
     private MediaPlayer mAudio;
-
+	
     private Uri mUri;
     private String mTitle;
     private FileDescriptor mFileDescriptor;
     private AssetFileDescriptor mAssetFileDescriptor;
-
+	
     private int mStreamType = AudioManager.STREAM_RING;
     private AudioManager mAudioManager;
-
+	
     private Context mContext;
-
+	
     Ringtone(Context context) {
         mContext = context;
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
     }
-
+	
     /**
      * Sets the stream type where this ringtone will be played.
      * 
@@ -92,7 +91,7 @@ public class Ringtone {
             }
         }
     }
-
+	
     /**
      * Gets the stream type where this ringtone will be played.
      * 
@@ -101,7 +100,7 @@ public class Ringtone {
     public int getStreamType() {
         return mStreamType;
     }
-
+	
     /**
      * Returns a human-presentable title for ringtone. Looks in media and DRM
      * content providers. If not in either, uses the filename
@@ -112,27 +111,47 @@ public class Ringtone {
         if (mTitle != null) return mTitle;
         return mTitle = getTitle(context, mUri, true);
     }
-
+	
+    private static String stringForQuery(Cursor cursor) {
+        if (cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    return cursor.getString(0);
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        return null;
+    }
+	
     private static String getTitle(Context context, Uri uri, boolean followSettingsUri) {
         Cursor cursor = null;
         ContentResolver res = context.getContentResolver();
         
         String title = null;
-
+		
         if (uri != null) {
             String authority = uri.getAuthority();
-
+			
             if (Settings.AUTHORITY.equals(authority)) {
                 if (followSettingsUri) {
                     Uri actualUri = RingtoneManager.getActualDefaultRingtoneUri(context,
-                            RingtoneManager.getDefaultType(uri));
+																				RingtoneManager.getDefaultType(uri));
                     String actualTitle = getTitle(context, actualUri, false);
                     title = context
-                            .getString(com.android.internal.R.string.ringtone_default_with_actual,
-                                    actualTitle);
+					.getString(com.android.internal.R.string.ringtone_default_with_actual,
+							   actualTitle);
+                }
+            } else if (RingtoneManager.THEME_AUTHORITY.equals(authority)) {
+                Uri themes = Uri.parse("content://com.tmobile.thememanager.themes/themes");
+                title = stringForQuery(res.query(themes, new String[] { "ringtone_name" },
+												 "ringtone_uri = ?", new String[] { uri.toString() }, null));
+                if (title == null) {
+                    title = stringForQuery(res.query(themes, new String[] { "notif_ringtone_name" },
+													 "notif_ringtone_uri = ?", new String[] { uri.toString() }, null));
                 }
             } else {
-                
                 if (DrmStore.AUTHORITY.equals(authority)) {
                     cursor = res.query(uri, DRM_COLUMNS, null, null, null);
                 } else if (MediaStore.AUTHORITY.equals(authority)) {
@@ -153,7 +172,7 @@ public class Ringtone {
                 }
             }
         }
-
+		
         if (title == null) {
             title = context.getString(com.android.internal.R.string.ringtone_unknown);
             
@@ -182,8 +201,8 @@ public class Ringtone {
                 mAudio.setDataSource(mAssetFileDescriptor.getFileDescriptor());
             } else {
                 mAudio.setDataSource(mAssetFileDescriptor.getFileDescriptor(),
-                        mAssetFileDescriptor.getStartOffset(),
-                        mAssetFileDescriptor.getDeclaredLength());
+									 mAssetFileDescriptor.getStartOffset(),
+									 mAssetFileDescriptor.getDeclaredLength());
             }
         } else {
             throw new IOException("No data source set.");
@@ -191,22 +210,22 @@ public class Ringtone {
         mAudio.setAudioStreamType(mStreamType);
         mAudio.prepare();
     }
-
+	
     void open(FileDescriptor fd) throws IOException {
         mFileDescriptor = fd;
         openMediaPlayer();
     }
-
+	
     void open(AssetFileDescriptor fd) throws IOException {
         mAssetFileDescriptor = fd;
         openMediaPlayer();
     }
-
+	
     void open(Uri uri) throws IOException {
         mUri = uri;
         openMediaPlayer();
     }
-
+	
     /**
      * Plays the ringtone.
      */
@@ -227,7 +246,7 @@ public class Ringtone {
             }
         }
     }
-
+	
     /**
      * Stops a playing ringtone.
      */
@@ -238,7 +257,7 @@ public class Ringtone {
             mAudio = null;
         }
     }
-
+	
     /**
      * Whether this ringtone is currently playing.
      * 
@@ -247,7 +266,7 @@ public class Ringtone {
     public boolean isPlaying() {
         return mAudio != null && mAudio.isPlaying();
     }
-
+	
     void setTitle(String title) {
         mTitle = title;
     }

@@ -1934,6 +1934,12 @@ public final class Settings {
          */
         public static final String LOCKSCREEN_SOUNDS_ENABLED = "lockscreen_sounds_enabled";
 
+		/**
+         * Battery Percentages
+         * @hide
+         */
+        public static final String BATTERY_PERCENTAGES = "battery_percentages";
+		
         /**
          * URI for the low battery sound file.
          * @hide
@@ -2195,6 +2201,8 @@ public final class Settings {
          */
         public static final String STATUSBAR_BATTERY_ICON = "statusbar_battery_icon";
 		
+		
+		
         /**
          * thickness of the batteyr bar (in dp)
          * 
@@ -2402,6 +2410,13 @@ public final class Settings {
          * @hide
          */
         public static final String ACCELEROMETER_ROTATION_ANGLES = "accelerometer_rotation_angles";
+		
+		/**
+		 * Lockscreen Battery Percentage always on
+		 *
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_BATTERY = "lockscreen_battery";
 		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -2775,6 +2790,17 @@ public final class Settings {
          *@hide
          */
 		public static final String STATUSBAR_BATTERY_BAR_COLOR = "statusbar_battery_bar_color";
+		
+		/** 
+         * the type of recent switcher
+         *
+		 * 0 = Stock
+		 * 1 = WebOS
+		 * 2 = Sense4
+		 * 
+         * @hide
+         */
+        public static final String RECENT_APP_SWITCHER = "recent_app_switcher";
     }
 
     /**

@@ -66,7 +66,7 @@ public class KeyButtonView extends ImageView {
 	int durationSpeedOn = 500;
 	int durationSpeedOff = 50;
 	
-	int mGlowBGColor = 0;
+	int mGlowBGColor = Integer.MIN_VALUE;
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
@@ -99,8 +99,13 @@ public class KeyButtonView extends ImageView {
 
         mGlowBG = a.getDrawable(R.styleable.KeyButtonView_glowBackground);
         if (mGlowBG != null) {
-			if (mGlowBGColor != Integer.MIN_VALUE)
-				mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
+			int defaultColor = mContext.getResources().getColor(
+                    com.android.internal.R.color.holo_blue_light);
+            if (mGlowBGColor == Integer.MIN_VALUE) {
+                mGlowBGColor = defaultColor;
+            }
+            mGlowBG.setColorFilter(null);
+            mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
             mDrawingAlpha = BUTTON_QUIESCENT_ALPHA;
         }
         
@@ -342,26 +347,33 @@ public class KeyButtonView extends ImageView {
 			Settings.System.NAVIGATION_BAR_BUTTON_ALPHA,
 			0.6f);
 		setDrawingAlpha(BUTTON_QUIESCENT_ALPHA);
-		invalidate();
 
-		try {
-			mGlowBGColor = Settings.System.getInt(resolver,
-				Settings.System.NAVIGATION_BAR_GLOW_TINT);
-			if (mGlowBGColor == Integer.MIN_VALUE) {
-				mGlowBG.setColorFilter(null);
-			} else if (mGlowBG != null) {
-				mGlowBG.setColorFilter(null);
-				mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
-			}
-			} catch (SettingNotFoundException e1) {
-				mGlowBGColor = Integer.MIN_VALUE;
-		}
+        if (mGlowBG != null) {
+            int defaultColor = mContext.getResources().getColor(
+                    com.android.internal.R.color.holo_blue_light);
+            mGlowBGColor = Settings.System.getInt(resolver,
+                Settings.System.NAVIGATION_BAR_GLOW_TINT, defaultColor);
 
-		try {
-			setColorFilter(null);
-			setColorFilter(Settings.System.getInt(resolver, Settings.System.NAVIGATION_BAR_TINT));
-		} catch (SettingNotFoundException e) {
-		}
+            if (mGlowBGColor == Integer.MIN_VALUE) {
+                mGlowBGColor = defaultColor;
+            }
+            mGlowBG.setColorFilter(null);
+            mGlowBG.setColorFilter(mGlowBGColor, PorterDuff.Mode.SRC_ATOP);
+        }
+
+        try {
+            int color = Settings.System.getInt(resolver, Settings.System.NAVIGATION_BAR_TINT);
+
+            if (color == Integer.MIN_VALUE) {
+                setColorFilter(null);
+            } else {
+                setColorFilter(null);
+                setColorFilter(Settings.System
+                        .getInt(resolver, Settings.System.NAVIGATION_BAR_TINT));
+            }
+        } catch (SettingNotFoundException e) {
+        }
+        invalidate();
 
 	}
 }

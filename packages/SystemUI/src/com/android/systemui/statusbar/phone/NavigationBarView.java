@@ -20,7 +20,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.res.Resources;
+
+import android.content.ContentResolver;
+import android.database.ContentObserver;
 import android.graphics.Rect;
+import android.os.Handler;
 import android.os.ServiceManager;
 import android.util.AttributeSet;
 import android.util.Slog;

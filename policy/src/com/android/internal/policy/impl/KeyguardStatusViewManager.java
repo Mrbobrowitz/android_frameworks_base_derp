@@ -33,6 +33,7 @@ import android.content.Context;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -51,6 +52,7 @@ class KeyguardStatusViewManager implements OnClickListener {
     public static final int ALARM_ICON = R.drawable.ic_lock_idle_alarm;
     public static final int CHARGING_ICON = 0; //R.drawable.ic_lock_idle_charging;
     public static final int BATTERY_LOW_ICON = 0; //R.drawable.ic_lock_idle_low_battery;
+	public static final int BATTERY_ICON = 0; //insert a R.drawable icon if you want it to show up
     private static final long INSTRUCTION_RESET_DELAY = 2000; // time until instruction text resets
 
     private static final int INSTRUCTION_TEXT = 10;
@@ -70,6 +72,7 @@ class KeyguardStatusViewManager implements OnClickListener {
     private TextView mCarrierView;
     private TextView mDateView;
     private TextView mStatus1View;
+	private TextView mStatus2View;
     private TextView mOwnerInfoView;
     private TextView mAlarmStatusView;
     private TransportControlView mTransportView;
@@ -79,6 +82,7 @@ class KeyguardStatusViewManager implements OnClickListener {
 
     // are we showing battery information?
     private boolean mShowingBatteryInfo = false;
+	private boolean mLockAlwaysBattery;
 
     // last known plugged in state
     private boolean mPluggedIn = false;
@@ -205,7 +209,7 @@ class KeyguardStatusViewManager implements OnClickListener {
 		updateColors();
 
         // Required to get Marquee to work.
-        final View scrollableViews[] = { mCarrierView, mDateView, mStatus1View, mOwnerInfoView,
+        final View scrollableViews[] = { mCarrierView, mDateView, mStatus1View, mStatus2View,  mOwnerInfoView,
                 mAlarmStatusView };
         for (View v : scrollableViews) {
             if (v != null) {
@@ -318,6 +322,7 @@ class KeyguardStatusViewManager implements OnClickListener {
         updateAlarmInfo();
         updateOwnerInfo();
         updateStatus1();
+		updateStatus2();
         updateCarrierText();
     }
 
@@ -352,6 +357,16 @@ class KeyguardStatusViewManager implements OnClickListener {
             mStatus1View.setVisibility(mShowingStatus ? View.VISIBLE : View.INVISIBLE);
         }
     }
+	
+	private void updateStatus2() {
+		if (mStatus2View != null) {
+			MutableInt icon = new MutableInt(0);
+			CharSequence string = getSecondPriorityTextMessage(icon);
+			mStatus2View.setText(string);
+			mStatus2View.setCompoundDrawablesWithIntrinsicBounds(icon.value, 0, 0, 0);
+			mStatus2View.setVisibility(mShowingStatus ? View.VISIBLE : View.INVISIBLE);
+		}
+	}
 
     private void updateCarrierText() {
         if (!inWidgetMode() && mCarrierView != null) {
@@ -363,7 +378,8 @@ class KeyguardStatusViewManager implements OnClickListener {
         // If we have replaced the status area with a single widget, then this code
         // prioritizes what to show in that space when all transient messages are gone.
         CharSequence string = null;
-        if (mShowingBatteryInfo) {
+		mLockAlwaysBattery = Settings.System.getInt(getContext().getContentResolver(), Settings.System.LOCKSCREEN_BATTERY, 0) == 1;
+        if (mShowingBatteryInfo || mLockAlwaysBattery) {
             // Battery status
             if (mPluggedIn) {
                 // Charging or charged
@@ -373,10 +389,16 @@ class KeyguardStatusViewManager implements OnClickListener {
                     string = getContext().getString(R.string.lockscreen_plugged_in, mBatteryLevel);
                 }
                 icon.value = CHARGING_ICON;
-            } else if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
+            } else {
+				if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
                 // Battery is low
-                string = getContext().getString(R.string.lockscreen_low_battery);
-                icon.value = BATTERY_LOW_ICON;
+					string = getContext().getString(R.string.lockscreen_low_battery);
+					icon.value = BATTERY_LOW_ICON;
+				} else {
+					// Always show battery
+					string = getContext().getString(R.string.lockscreen_always_battery, mBatteryLevel);
+					icon.value = BATTERY_ICON;
+				}
             }
         } else {
             string = mCarrierText;
@@ -386,11 +408,13 @@ class KeyguardStatusViewManager implements OnClickListener {
 
     private CharSequence getPriorityTextMessage(MutableInt icon) {
         CharSequence string = null;
+		mLockAlwaysBattery = Settings.System.getInt(getContext().getContentResolver(),
+													Settings.System.LOCKSCREEN_BATTERY, 0) == 1;
         if (!TextUtils.isEmpty(mInstructionText)) {
             // Instructions only
             string = mInstructionText;
             icon.value = LOCK_ICON;
-        } else if (mShowingBatteryInfo) {
+        } else if (mShowingBatteryInfo || mLockAlwaysBattery) {
             // Battery status
             if (mPluggedIn) {
                 // Charging or charged
@@ -400,17 +424,38 @@ class KeyguardStatusViewManager implements OnClickListener {
                     string = getContext().getString(R.string.lockscreen_plugged_in, mBatteryLevel);
                 }
                 icon.value = CHARGING_ICON;
-            } else if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
+            } else {
+				if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
                 // Battery is low
                 string = getContext().getString(R.string.lockscreen_low_battery);
-                icon.value = BATTERY_LOW_ICON;
-            }
+				icon.value = BATTERY_LOW_ICON;
+				} else {
+					// Always show battery
+					string = getContext().getString(R.string.lockscreen_always_battery, mBatteryLevel);
+					icon.value = BATTERY_ICON;
+				}
+				}
         } else if (!inWidgetMode() && mOwnerInfoView == null && mOwnerInfoText != null) {
             // OwnerInfo shows in status if we don't have a dedicated widget
             string = mOwnerInfoText;
         }
         return string;
     }
+	
+	private CharSequence getSecondPriorityTextMessage(MutableInt icon) {
+        CharSequence string = null;
+        mLockAlwaysBattery = Settings.System.getInt(getContext().getContentResolver(), Settings.System.LOCKSCREEN_BATTERY, 0) == 1;
+        if (mShowingBatteryInfo || mLockAlwaysBattery) {
+            if (!inWidgetMode() && mOwnerInfoView == null && mOwnerInfoText != null) {
+				// OwnerInfo shows in status if we don't have a dedicated widget
+                string = mOwnerInfoText;
+            }
+        } else {
+            string = null;
+        }
+        return string;
+    }
+	
 
     void refreshDate() {
         if (mDateView != null) {

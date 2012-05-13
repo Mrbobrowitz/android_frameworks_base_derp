@@ -106,7 +106,11 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
     private volatile boolean mWindowFocused = false;
     private boolean mEnableFallback = false; // assume no fallback UI until we know better
 
-    private boolean mShowLockBeforeUnlock = false;
+	private boolean mShowLockBeforeUnlock = false || Settings.System.getInt(
+					mContext.getContentResolver(), Settings.System.LOCKSCREEN_BEFORE_UNLOCK, 0) == 1;
+			
+	private boolean mUseOldMusic = Settings.System.getInt(
+					mContext.getContentResolver(), Settings.System.MUSIC_WIDGET_TYPE, 0) == 1;
 
     // The following were added to support FaceLock
     private IFaceLockInterface mFaceLockService;
@@ -247,7 +251,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 
             // If there's not a bg protection view containing the transport, then show a black
             // background. Otherwise, allow the normal background to show.
-            if (findViewById(R.id.transport_bg_protect) == null) {
+            if ((findViewById(R.id.transport_bg_protect) == null) && !mUseOldMusic) {
                 // TODO: We should disable the wallpaper instead
                 setBackgroundColor(0xff000000);
             } else {
@@ -274,6 +278,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
     };
 
     private TransportControlView mTransportControlView;
+	private TransportControlView mTransportControlView2;
 
     private Parcelable mSavedState;
 
@@ -493,7 +498,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
                 if (mUnlockScreen == null) {
                     if (DEBUG) Log.w(TAG, "no unlock screen when trying to enable fallback");
                 } else if (mUnlockScreen instanceof PatternUnlockScreen) {
-                    ((PatternUnlockScreen)mUnlockScreen).setEnableFallback(mEnableFallback);
+                    ((PatternUnlockScreen) mUnlockScreen).setEnableFallback(mEnableFallback);
                 }
                 return;
             }
@@ -567,7 +572,9 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         if (mUnlockScreen != null) {
             ((KeyguardScreen) mUnlockScreen).onPause();
         }
-
+		// When screen off reset back to LockScreen when mShowLockBeforeUnlock
+		// is enabled
+		mMode = mShowLockBeforeUnlock ? Mode.LockScreen : mMode;
         saveWidgetState();
 
         // When screen is turned off, need to unbind from FaceLock service if using FaceLock
@@ -623,20 +630,40 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
     }
 
     private void saveWidgetState() {
-        if (mTransportControlView != null) {
-            if (DEBUG) Log.v(TAG, "Saving widget state");
-            mSavedState = mTransportControlView.onSaveInstanceState();
-        }
+		if (mUseOldMusic) {
+			if (mTransportControlView2 != null) {
+				if (DEBUG)
+					Log.v(TAG, "Saving widget state");
+				mSavedState = mTransportControlView2.onSaveInstanceState();
+			}
+		} else {
+			if (mTransportControlView != null) {
+				if (DEBUG)
+					Log.v(TAG, "Saving widget state");
+				mSavedState = mTransportControlView.onSaveInstanceState();
+			}
+		}
     }
 
-    private void restoreWidgetState() {
-        if (mTransportControlView != null) {
-            if (DEBUG) Log.v(TAG, "Restoring widget state");
-            if (mSavedState != null) {
-                mTransportControlView.onRestoreInstanceState(mSavedState);
-            }
-        }
-    }
+	private void restoreWidgetState() {
+		if (mUseOldMusic) {
+			if (mTransportControlView2 != null) {
+				if (DEBUG)
+					Log.v(TAG, "Restoring widget state");
+				if (mSavedState != null) {
+					mTransportControlView2.onRestoreInstanceState(mSavedState);
+				}
+			}
+		} else {
+			if (mTransportControlView != null) {
+				if (DEBUG)
+					Log.v(TAG, "Restoring widget state");
+				if (mSavedState != null) {
+					mTransportControlView.onRestoreInstanceState(mSavedState);
+				}
+			}
+		}
+	}
 
     /** Unbind from facelock if something covers this window (such as an alarm)
      * bind to facelock if the lockscreen window just came into focus, and the screen is on
@@ -717,9 +744,11 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 
     protected void onConfigurationChanged(Configuration newConfig) {
         Resources resources = getResources();
-        mShowLockBeforeUnlock = resources.getBoolean(R.bool.config_enableLockBeforeUnlockScreen);
-        mConfiguration = newConfig;
-        if (DEBUG_CONFIGURATION) Log.v(TAG, "**** re-creating lock screen since config changed");
+		mShowLockBeforeUnlock = resources.getBoolean(R.bool.config_enableLockBeforeUnlockScreen)
+			|| (Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.LOCKSCREEN_BEFORE_UNLOCK, 0) == 1);        
+		mConfiguration = newConfig;
+		if (DEBUG_CONFIGURATION) Log.v(TAG, "**** re-creating lock screen since config changed");
         saveWidgetState();
         removeCallbacks(mRecreateRunnable);
         post(mRecreateRunnable);
@@ -864,8 +893,10 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
             }
         }
 
-        // Re-create the unlock screen if necessary. This is primarily required to properly handle
-        // SIM state changes. This typically happens when this method is called by reset()
+        // Re-create the unlock screen if necessary. This is primarily required 
+		// to properly handle
+        // SIM state changes. This typically happens when this method is called 
+		// by reset()
         if (mode == Mode.UnlockScreen) {
             final UnlockMode unlockMode = getUnlockMode();
             if (force || mUnlockScreen == null || unlockMode != mUnlockScreenMode) {
@@ -879,7 +910,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         final View goneScreen = (mode == Mode.LockScreen) ? mUnlockScreen : mLockScreen;
         final View visibleScreen = (mode == Mode.LockScreen) ? mLockScreen : mUnlockScreen;
 
-        // do this before changing visibility so focus isn't requested before the input
+        // do this before changing visibility so focus isn't requested before
+		// the input
         // flag is set
         mWindowController.setNeedsInput(((KeyguardScreen)visibleScreen).needsInput());
 
@@ -992,13 +1024,30 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 
     private void initializeTransportControlView(View view) {
         mTransportControlView = (TransportControlView) view.findViewById(R.id.transport);
-        if (mTransportControlView == null) {
-            if (DEBUG) Log.w(TAG, "Couldn't find transport control widget");
-        } else {
-            mUpdateMonitor.reportClockVisible(true);
-            mTransportControlView.setVisibility(View.GONE); // hide until it requests being shown.
-            mTransportControlView.setCallback(mWidgetCallback);
-        }
+		mTransportControlView2 = (TransportControlView) view.findViewById(R.id.transport2);
+		if (mUseOldMusic) {
+			if (mTransportControlView2 == null) {
+				if (DEBUG)
+					Log.w(TAG, "Couldn't find transport control widget");
+			} else {
+				mUpdateMonitor.reportClockVisible(true);
+				mTransportControlView2.setVisibility(View.GONE); // hide until it
+																 // requests being
+																 // shown.
+				mTransportControlView2.setCallback(mWidgetCallback);
+			}
+		} else {
+			if (mTransportControlView == null) {
+				if (DEBUG)
+					Log.w(TAG, "Couldn't find transport control widget");
+			} else {
+				mUpdateMonitor.reportClockVisible(true);
+				mTransportControlView.setVisibility(View.GONE); // hide until it
+																// requests being
+																// shown.
+				mTransportControlView.setCallback(mWidgetCallback);
+			}
+		}
     }
 
     /**

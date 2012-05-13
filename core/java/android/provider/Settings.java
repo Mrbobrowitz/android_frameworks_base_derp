@@ -2418,6 +2418,20 @@ public final class Settings {
 		 */
 		public static final String LOCKSCREEN_BATTERY = "lockscreen_battery";
 		
+		/**
+		 * Lock before Unlock
+		 *
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_BEFORE_UNLOCK = "lockscreen_before_unlock";
+		
+		/**
+		 * Gummy Old Lockscreen
+		 *
+		 * @hide
+		 */
+		public static final String MUSIC_WIDGET_TYPE = "music_widget_type";
+		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.

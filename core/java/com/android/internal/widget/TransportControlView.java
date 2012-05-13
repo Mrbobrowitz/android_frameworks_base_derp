@@ -208,6 +208,7 @@ public class TransportControlView extends FrameLayout implements OnClickListener
         super.onFinishInflate();
         mTrackTitle = (TextView) findViewById(R.id.title);
         mTrackTitle.setSelected(true); // enable marquee
+		mTrackTitle.setMarqueeRepeatLimit(-1);
         mAlbumArt = (ImageView) findViewById(R.id.albumart);
         mBtnPrev = (ImageView) findViewById(R.id.btn_prev);
         mBtnPlay = (ImageView) findViewById(R.id.btn_play);

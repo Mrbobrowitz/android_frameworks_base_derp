@@ -26,7 +26,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    
+
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
@@ -103,11 +103,25 @@
 
     </LinearLayout>
 
-    <TextView
+        <TextView
             android:id="@+id/status1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/zzdatealarm"
+            android:layout_alignParentRight="true"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textSize="@dimen/keyguard_lockscreen_status_line_font_size"
+            android:drawablePadding="4dip"
+            android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin"
+        />
+
+        <TextView
+            android:id="@+id/zzstatus2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/status1"
             android:layout_alignParentRight="true"
             android:singleLine="true"
             android:ellipsize="marquee"
@@ -195,7 +209,21 @@
 
     </LinearLayout>
 
-     <!-- Music transport control -->
+    <!-- Music transport control -->
+    <include android:id="@+id/transport2"
+        layout="@layout/keyguard_transport_control_old"
+        android:layout_row="0"
+        android:layout_column="0"
+        android:layout_rowSpan="4"
+        android:layout_columnSpan="1"
+        android:layout_gravity="top"
+        android:layout_below="@id/zzstatus2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        />
+
+
+    <!-- Music transport control -->
     <include android:id="@+id/transport"
         layout="@layout/keyguard_transport_control"
         android:layout_row="0"
@@ -206,6 +234,6 @@
         android:layout_width="fill_parent"
         android:layout_height="265dp"
         />
-        
+
     </RelativeLayout>
 </GridLayout>

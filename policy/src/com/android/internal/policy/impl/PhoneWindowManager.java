@@ -468,11 +468,6 @@ private long mPowerKeyTime;
 ShortcutManager mShortcutManager;
 PowerManager.WakeLock mBroadcastWakeLock;
 
-public static final String INTENT_TORCH_ON = "com.android.systemui.INTENT_TORCH_ON";
-public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
-boolean mFastTorchOn; // local state of torch
-boolean mEnableQuickTorch; // System.Setting
-
 final KeyCharacterMap.FallbackAction mFallbackAction = new KeyCharacterMap.FallbackAction();
 
 private UEventObserver mHDMIObserver = new UEventObserver() {
@@ -505,8 +500,6 @@ class SettingsObserver extends ContentObserver {
 				Settings.System.SCREEN_OFF_TIMEOUT), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
 				Settings.System.VOLBTN_MUSIC_CONTROLS), false, this);
-		resolver.registerContentObserver(Settings.System.getUriFor(
-				Settings.System.ENABLE_FAST_TORCH), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
 				Settings.System.WINDOW_ORIENTATION_LISTENER_LOG), false, this);
 		resolver.registerContentObserver(Settings.System.getUriFor(
@@ -638,27 +631,6 @@ class MyOrientationListener extends WindowOrientationListener {
 				mPendingPowerKeyUpCanceled = true;
 			}
 		}
-
-
-		Runnable mTorchOn = new Runnable() {
-			public void run() {
-				Intent i = new Intent(INTENT_TORCH_ON);
-						i.setAction(INTENT_TORCH_ON);
-						i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				mContext.startService(i);
-						mFastTorchOn = true;
-			};
-		};
-
-		Runnable mTorchOff = new Runnable() {
-			public void run() {
-				Intent i = new Intent(INTENT_TORCH_OFF);
-						i.setAction(INTENT_TORCH_OFF);
-						i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				mContext.startService(i);
-						mFastTorchOn = false;
-			};
-		};
 
 		/**
 		 * When a volumeup-key longpress expires, skip songs based on key press
@@ -1088,8 +1060,6 @@ Settings.System.ACCELEROMETER_ROTATION, DEFAULT_ACCELEROMETER_ROTATION);
 			mUserRotation = Settings.System.getInt(resolver,
 									Settings.System.USER_ROTATION,
 									Surface.ROTATION_0);
-			mEnableQuickTorch = Settings.System.getInt(resolver, Settings.System.ENABLE_FAST_TORCH,
-										0) == 1;
 			mUserRotationAngles = Settings.System.getInt(resolver,
 										   Settings.System.ACCELEROMETER_ROTATION_ANGLES, -1);
 
@@ -2984,13 +2954,7 @@ cancelPendingPowerKeyAction();
 interceptScreenshotChord();
 }
 
-if(!isScreenOn && mEnableQuickTorch) {
-handleChangeTorchState(true);
-
-}
-
 } else {
-handleChangeTorchState(false);
 mVolumeDownKeyTriggered = false;
 cancelPendingScreenshotChordAction();
 }
@@ -3007,6 +2971,7 @@ mVolumeUpKeyTriggered = false;
 cancelPendingScreenshotChordAction();
 }
 }
+
 if (down) {
 ITelephony telephonyService = getTelephonyService();
 if (telephonyService != null) {
@@ -3192,14 +3157,6 @@ result |= ACTION_POKE_USER_ACTIVITY;
 return result;
 }
 
-void handleChangeTorchState(boolean on) {
-if (on) {
-mHandler.postDelayed(mTorchOn, ViewConfiguration.getLongPressTimeout());
-} else {
-mHandler.removeCallbacks(mTorchOn);
-mHandler.post(mTorchOff);
-}
-}
 
 class PassHeadsetKey implements Runnable {
 	KeyEvent mKeyEvent;

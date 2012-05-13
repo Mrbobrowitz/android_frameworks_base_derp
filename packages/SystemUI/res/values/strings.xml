@@ -367,4 +367,6 @@
     <string name="recent_apps_title">Recent apps</string>
     
     <string name="battery_test">99</string>
+    
+    <string name="accessibility_search">Search</string>
 </resources>

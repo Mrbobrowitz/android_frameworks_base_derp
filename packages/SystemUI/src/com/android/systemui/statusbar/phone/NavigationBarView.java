@@ -18,18 +18,21 @@ package com.android.systemui.statusbar.phone;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.content.Context;
-import android.content.res.Resources;
-
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.ServiceManager;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Slog;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.ImageView;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,6 +47,7 @@ import java.lang.StringBuilder;
 import com.android.internal.statusbar.IStatusBarService;
 
 import com.android.systemui.R;
+import com.android.systemui.statusbar.policy.KeyButtonView;
 
 public class NavigationBarView extends LinearLayout {
     final static boolean DEBUG = false;
@@ -54,7 +58,7 @@ public class NavigationBarView extends LinearLayout {
     final static boolean NAVBAR_ALWAYS_AT_RIGHT = true;
 
     final static boolean ANIMATE_HIDE_TRANSITION = false; // turned off because it introduces unsightly delay when videos goes to full screen
-
+	
     protected IStatusBarService mBarService;
     final Display mDisplay;
     View mCurrentView = null;
@@ -62,26 +66,126 @@ public class NavigationBarView extends LinearLayout {
 
     int mBarSize;
     boolean mVertical;
-
+	
     boolean mHidden, mLowProfile, mShowMenu;
     int mDisabledFlags = 0;
+	
+	public final static int SHOW_LEFT_MENU = 1;
+	public final static int SHOW_RIGHT_MENU = 0;
+	public final static int SHOW_BOTH_MENU = 2;
+	
+	public final static int VISIBILITY_SYSTEM = 0;
+	public final static int VISIBILITY_NEVER = 1;
+	public final static int VISIBILITY_ALWAYS = 2;
+	
+	public final static int STOCK_NAV_BUTTONS = 3;
+	public final static int RECENTS_FOR_SEARCH = 4;
+	public final static int ADD_SEARCH_TO_NAV = 5;
+	
+	private int mNavButtons = STOCK_NAV_BUTTONS;
+	
+	public void updateButtons() {
+        String saved = Settings.System.getString(mContext.getContentResolver(), Settings.System.NAV_BUTTONS);
+        if (saved == null) {
+            saved = "back|home|recent|search0";
+        }
+        boolean isPortrait = mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+        int[] ids = {R.id.one,R.id.two,R.id.three,R.id.four};
+        
+		SettingsObserver settingsObserver = new SettingsObserver(new Handler());
+		settingsObserver.observe();
+		
+        int cc =0;
+        //Reset all paddings to invisible
+        ViewGroup navPanel = ((ViewGroup) mCurrentView.findViewById(R.id.nav_buttons));
+        for (int cv = 0; cv < navPanel.getChildCount(); cv++) {
+            if (!(navPanel.getChildAt(cv) instanceof KeyButtonView)) {
+                navPanel.getChildAt(cv).setVisibility(View.INVISIBLE);
+            }
+        }
+        for (String buttons : saved.split("\\|") ){
+            KeyButtonView cView = (KeyButtonView) mCurrentView.findViewById(ids[cc]);
+            if (buttons.equals("back")){
+                cView.setTag("back");
+                cView.setContentDescription(mContext.getResources().getString(R.string.accessibility_back));
+                cView.setMCode(KeyEvent.KEYCODE_BACK);
+                if (isPortrait) {
+                    cView.setImageResource(R.drawable.ic_sysbar_back);
+                } else {
+                    cView.setImageResource(R.drawable.ic_sysbar_back_land);
+                }
+            } else if (buttons.equals("home")){
+                cView.setTag("home");
+                cView.setContentDescription(mContext.getResources().getString(R.string.accessibility_home));
+                cView.setMCode(KeyEvent.KEYCODE_HOME);
+                if (isPortrait) {
+                    cView.setImageResource(R.drawable.ic_sysbar_home);
+                } else {
+                    cView.setImageResource(R.drawable.ic_sysbar_home_land);
+                }
+            } else if (buttons.equals("recent")){
+                cView.setTag("recent");
+                cView.setContentDescription(mContext.getResources().getString(R.string.accessibility_recent));
+                cView.setMCode(0);
+                if (isPortrait) {
+                    cView.setImageResource(R.drawable.ic_sysbar_recent);
+                } else {
+                    cView.setImageResource(R.drawable.ic_sysbar_recent_land);
+                }
+				//Hide recents button padding }
+                if (mNavButtons == STOCK_NAV_BUTTONS) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.VISIBLE);
+                } else if (mNavButtons == RECENTS_FOR_SEARCH) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.GONE);
+                } else if (mNavButtons == ADD_SEARCH_TO_NAV) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.VISIBLE);
+                }
+            } else {
+                cView.setTag("search");
+                cView.setContentDescription(mContext.getResources().getString(R.string.accessibility_search));
+                cView.setMCode(KeyEvent.KEYCODE_SEARCH);
+                if (isPortrait) {
+                    cView.setImageResource(R.drawable.ic_sysbar_search);
+                } else {
+                    cView.setImageResource(R.drawable.ic_sysbar_search_land);
+                }
+                //Hide search button padding
+                if (mNavButtons == STOCK_NAV_BUTTONS) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.GONE);
+                } else if (mNavButtons == RECENTS_FOR_SEARCH) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.VISIBLE);
+                } else if (mNavButtons == ADD_SEARCH_TO_NAV) {
+                    navPanel.getChildAt(navPanel.indexOfChild(cView) - 1).setVisibility(View.VISIBLE);
+                }            }
+            cc++;
+        }
+        mCurrentView.invalidate();
+    }	
 
     public View getRecentsButton() {
-        return mCurrentView.findViewById(R.id.recent_apps);
+        return mCurrentView.findViewWithTag("recent");
     }
+	
+	public View getLeftMenuButton() {
+		return mCurrentView.findViewById(R.id.menu_left);
+	}
 
-    public View getMenuButton() {
+    public View getRightMenuButton() {
         return mCurrentView.findViewById(R.id.menu);
     }
 
     public View getBackButton() {
-        return mCurrentView.findViewById(R.id.back);
+        return mCurrentView.findViewWithTag("back");
     }
 
     public View getHomeButton() {
-        return mCurrentView.findViewById(R.id.home);
+        return mCurrentView.findViewWithTag("home");
     }
-
+	
+	public View getSearchButton() {
+		return mCurrentView.findViewWithTag("search");
+	}
+	
     public NavigationBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
@@ -97,7 +201,7 @@ public class NavigationBarView extends LinearLayout {
         mVertical = false;
         mShowMenu = false;
     }
-
+	
     View.OnTouchListener mLightsOutListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent ev) {
@@ -131,20 +235,79 @@ public class NavigationBarView extends LinearLayout {
 
         getBackButton()   .setVisibility(disableBack       ? View.INVISIBLE : View.VISIBLE);
         getHomeButton()   .setVisibility(disableHome       ? View.INVISIBLE : View.VISIBLE);
-        getRecentsButton().setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
-    }
+        
+		if (mNavButtons == STOCK_NAV_BUTTONS) {
+			getRecentsButton().setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
+			getSearchButton() .setVisibility(View.GONE);
 
-    public void setMenuVisibility(final boolean show) {
-        setMenuVisibility(show, false);
-    }
+		} else if (mNavButtons == RECENTS_FOR_SEARCH) {
+			getRecentsButton().setVisibility(View.GONE);
 
-    public void setMenuVisibility(final boolean show, final boolean force) {
-        if (!force && mShowMenu == show) return;
+		} else if (mNavButtons == ADD_SEARCH_TO_NAV) {
+			getRecentsButton().setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
+			getSearchButton() .setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
+		}
+	}
 
-        mShowMenu = show;
+	public void setMenuVisibility(final boolean show) {
+		setMenuVisibility(show, false);
+	}
 
-        getMenuButton().setVisibility(mShowMenu ? View.VISIBLE : View.INVISIBLE);
-    }
+	public void setMenuVisibility(final boolean show, final boolean force) {
+		if (!force && mShowMenu == show) return;
+			mShowMenu = show;
+			boolean localShow = show;
+
+		int currentSetting = Settings.System.getInt(getContext().getContentResolver(),
+				Settings.System.MENU_LOCATION, SHOW_RIGHT_MENU);
+
+		int currentVisibility = Settings.System.getInt(getContext().getContentResolver(),
+				Settings.System.MENU_VISIBILITY, VISIBILITY_SYSTEM);
+
+		switch (currentVisibility) {
+			default:
+			case VISIBILITY_SYSTEM:
+				((ImageView) getLeftMenuButton())
+						.setImageResource(mVertical ? R.drawable.ic_sysbar_menu_land
+								: R.drawable.ic_sysbar_menu);
+				((ImageView) getRightMenuButton())
+						.setImageResource(mVertical ? R.drawable.ic_sysbar_menu_land
+								: R.drawable.ic_sysbar_menu);
+				break;
+			case VISIBILITY_ALWAYS:
+				((ImageView) getLeftMenuButton())
+						.setImageResource(mVertical ? R.drawable.ic_sysbar_menu_land
+								: R.drawable.ic_sysbar_menu);
+				((ImageView) getRightMenuButton())
+						.setImageResource(mVertical ? R.drawable.ic_sysbar_menu_land
+								: R.drawable.ic_sysbar_menu);
+				localShow = true;
+				break;
+			case VISIBILITY_NEVER:
+				((ImageView) getLeftMenuButton())
+						.setImageResource(R.drawable.ic_sysbar_menu_inviz);
+				((ImageView) getRightMenuButton())
+						.setImageResource(R.drawable.ic_sysbar_menu_inviz);
+				localShow = true;
+				break;
+			}
+
+			switch (currentSetting) {
+				case SHOW_BOTH_MENU:
+					getLeftMenuButton().setVisibility(localShow ? View.VISIBLE : View.INVISIBLE);
+					getRightMenuButton().setVisibility(localShow ? View.VISIBLE : View.INVISIBLE);
+					break;
+				case SHOW_LEFT_MENU:
+					getLeftMenuButton().setVisibility(localShow ? View.VISIBLE : View.INVISIBLE);
+					getRightMenuButton().setVisibility(View.INVISIBLE);
+					break;
+				default:
+				case SHOW_RIGHT_MENU:
+					getLeftMenuButton().setVisibility(View.INVISIBLE);
+					getRightMenuButton().setVisibility(localShow ? View.VISIBLE : View.INVISIBLE);
+					break;
+			}
+	}
 
     public void setLowProfile(final boolean lightsOut) {
         setLowProfile(lightsOut, true, false);
@@ -159,6 +322,8 @@ public class NavigationBarView extends LinearLayout {
 
         final View navButtons = mCurrentView.findViewById(R.id.nav_buttons);
         final View lowLights = mCurrentView.findViewById(R.id.lights_out);
+
+		lowLights.findViewById(R.id.extraDot).setVisibility(mNavButtons == STOCK_NAV_BUTTONS || mNavButtons == RECENTS_FOR_SEARCH ? View.GONE : View.VISIBLE);
 
         // ok, everyone, stop it right there
         navButtons.animate().cancel();
@@ -232,7 +397,8 @@ public class NavigationBarView extends LinearLayout {
         mCurrentView = mRotatedViews[rot];
         mCurrentView.setVisibility(View.VISIBLE);
         mVertical = (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270);
-
+		
+		updateButtons();
         // force the low profile & disabled states into compliance
         setLowProfile(mLowProfile, false, true /* force */);
         setDisabledFlags(mDisabledFlags, true /* force */);
@@ -301,7 +467,7 @@ public class NavigationBarView extends LinearLayout {
         final View back = getBackButton();
         final View home = getHomeButton();
         final View recent = getRecentsButton();
-        final View menu = getMenuButton();
+        final View menu = getRightMenuButton();
 
         pw.println("      back: "
                 + PhoneStatusBar.viewInfo(back)
@@ -321,4 +487,30 @@ public class NavigationBarView extends LinearLayout {
                 );
         pw.println("    }");
     }
+	
+	class SettingsObserver extends ContentObserver {
+		SettingsObserver(Handler handler) {
+			super(handler);
+		}
+    
+		void observe() {
+			ContentResolver resolver = mContext.getContentResolver();
+			resolver.registerContentObserver(
+										 Settings.System.getUriFor(Settings.System.NAV_BUTTON_CONFIG), false,
+										 this);
+			updateSettings();
+		}
+    
+		public void onChange(boolean selfChange) {
+			updateSettings();
+		}
+	}
+
+	protected void updateSettings() {
+		ContentResolver resolver = mContext.getContentResolver();
+
+		mNavButtons = Settings.System.getInt(resolver,
+		Settings.System.NAV_BUTTON_CONFIG, STOCK_NAV_BUTTONS);
+
+	}
 }

@@ -2432,6 +2432,19 @@ public final class Settings {
 		 */
 		public static final String MUSIC_WIDGET_TYPE = "music_widget_type";
 		
+		/**
+		 * Switch recents with search
+		 *
+		 * @hide
+		 */
+		public static final String SWITCH_WITH_SEARCH = "switch_with_search";
+		
+		public static final String NAV_BUTTON_CONFIG = "nav_button_config";
+		
+		public static final String PERSIST_MENU = "persist_menu";
+		
+		public static final String MENU_VISIBILITY = "menu_visibility";
+		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
@@ -2778,7 +2791,8 @@ public final class Settings {
         @Deprecated
         public static final String WIFI_WATCHDOG_PING_TIMEOUT_MS =
             Secure.WIFI_WATCHDOG_PING_TIMEOUT_MS;
-    
+		
+		public static final String MENU_LOCATION = "menu_location";
 		
 		/**
 		 * Whether to show the battery bar or not.

@@ -32,6 +32,7 @@ import android.view.ViewGroup;
 import android.view.ViewManager;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.provider.Settings;
 
 import android.graphics.Color;
 
@@ -109,6 +110,8 @@ public class KeyguardViewManager implements KeyguardWindowController {
         boolean enableScreenRotation =
                 SystemProperties.getBoolean("lockscreen.rot_override",false)
                 || res.getBoolean(R.bool.config_enableLockScreenRotation);
+		enableScreenRotation = Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.LOCKSCREEN_LANDSCAPE, enableScreenRotation ? 1 : 0) == 1;
         if (mKeyguardHost == null) {
             if (DEBUG) Log.d(TAG, "keyguard host is null, creating it...");
 
@@ -145,7 +148,7 @@ public class KeyguardViewManager implements KeyguardWindowController {
             mViewManager.addView(mKeyguardHost, lp);
         }
 
-        if (enableScreenRotation) {
+        if (enableScreenRotation && Settings.System.getInt(mContext.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 1) == 1) {
             if (DEBUG) Log.d(TAG, "Rotation sensor for lock screen On!");
             mWindowLayoutParams.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR;
         } else {

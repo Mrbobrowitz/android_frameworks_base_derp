@@ -328,6 +328,8 @@ public class PhoneStatusBar extends StatusBar {
 				(NavigationBarView) View.inflate(context, R.layout.navigation_bar, null);
 				
                 mNavigationBarView.setDisabledFlags(mDisabled);
+				NavPanelObserver settingsObserver = new NavPanelObserver(new Handler());
+                settingsObserver.observe();
             }
         } catch (RemoteException ex) {
             // no window manager? good luck with that
@@ -432,11 +434,17 @@ public class PhoneStatusBar extends StatusBar {
         public void observe() {
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(
-											 Settings.System.getUriFor(Settings.System.NAV_BUTTONS),
-											 false, this);
+					Settings.System.getUriFor(Settings.System.NAV_BUTTONS),
+					false, this);
 			resolver.registerContentObserver(
-											 Settings.System.getUriFor(Settings.System.NAV_BUTTON_CONFIG),
-											 false, this);
+					Settings.System.getUriFor(Settings.System.NAV_BUTTON_CONFIG),
+					false, this);
+			resolver.registerContentObserver(
+					Settings.System.getUriFor(Settings.System.MENU_LOCATION), 
+					false, this);
+            resolver.registerContentObserver(
+					Settings.System.getUriFor(Settings.System.MENU_VISIBILITY), 
+				    false, this);
             onChange(true);
         }
 		
@@ -1210,8 +1218,7 @@ return null;
 				| StatusBarManager.DISABLE_RECENT
 				| StatusBarManager.DISABLE_BACK)) != 0) {
 			// the nav bar will take care of these
-			if (mNavigationBarView != null) 
-				mNavigationBarView.setDisabledFlags(state);
+			if (mNavigationBarView != null) mNavigationBarView.setDisabledFlags(state);
 	
 			if ((state & StatusBarManager.DISABLE_RECENT) != 0) {
 				// close recents if it's visible

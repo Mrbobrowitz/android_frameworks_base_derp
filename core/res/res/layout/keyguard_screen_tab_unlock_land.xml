@@ -111,6 +111,7 @@
         android:drawablePadding="4dip"
         />
 
+
     <Space android:layout_gravity="fill" />
 
     <TextView
@@ -142,22 +143,25 @@
     <Space android:layout_width="64dip" android:layout_rowSpan="7" />
 
     <!-- Column 2 -->
-    <com.android.internal.widget.SlidingTab
+    <com.android.internal.widget.multiwaveview.MultiWaveView
         android:id="@+id/unlock_widget"
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
+        android:layout_width="200dip"
         android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="155dip"
-        />
+        android:layout_rowSpan="7"
 
-    <com.android.internal.widget.SlidingTab
-        android:id="@+id/unlock_widget"
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="60dip"
+        android:targetDrawables="@array/lockscreen_targets_with_camera"
+        android:targetDescriptions="@array/lockscreen_target_descriptions_with_camera"
+        android:directionDescriptions="@array/lockscreen_direction_descriptions"
+        android:handleDrawable="@drawable/ic_lockscreen_handle"
+        android:waveDrawable="@drawable/ic_lockscreen_outerring"
+        android:outerRadius="@dimen/multiwaveview_target_placement_radius"
+        android:snapMargin="@dimen/multiwaveview_snap_margin"
+        android:hitRadius="@dimen/multiwaveview_hit_radius"
+        android:topChevronDrawable="@drawable/ic_lockscreen_chevron_up"
+        android:feedbackCount="3"
+        android:vibrationDuration="20"
+        android:horizontalOffset="0dip"
+        android:verticalOffset="0dip"
         />
 
     <!-- Music transport control -->

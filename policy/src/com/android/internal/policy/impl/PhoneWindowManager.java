@@ -863,89 +863,90 @@ class MyOrientationListener extends WindowOrientationListener {
 
 	/** {@inheritDoc} */
 	public void init(Context context, IWindowManager windowManager,
-		WindowManagerFuncs windowManagerFuncs,
-LocalPowerManager powerManager) {
-mContext = context;
-mWindowManager = windowManager;
-mWindowManagerFuncs = windowManagerFuncs;
-mPowerManager = powerManager;
-mKeyguardMediator = new KeyguardViewMediator(context, this, powerManager);
-mHandler = new Handler();
-mOrientationListener = new MyOrientationListener(mContext);
-try {
-mOrientationListener.setCurrentRotation(windowManager.getRotation());
-} catch (RemoteException ex) { }
-SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-settingsObserver.observe();
-mShortcutManager = new ShortcutManager(context, mHandler);
-mShortcutManager.observe();
-mHomeIntent =  new Intent(Intent.ACTION_MAIN, null);
-mHomeIntent.addCategory(Intent.CATEGORY_HOME);
-mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-mCarDockIntent =  new Intent(Intent.ACTION_MAIN, null);
-mCarDockIntent.addCategory(Intent.CATEGORY_CAR_DOCK);
-mCarDockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-mDeskDockIntent =  new Intent(Intent.ACTION_MAIN, null);
-mDeskDockIntent.addCategory(Intent.CATEGORY_DESK_DOCK);
-mDeskDockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+			WindowManagerFuncs windowManagerFuncs,
+			LocalPowerManager powerManager) {
+		mContext = context;
+		mWindowManager = windowManager;
+		mWindowManagerFuncs = windowManagerFuncs;
+		mPowerManager = powerManager;
+		mKeyguardMediator = new KeyguardViewMediator(context, this, powerManager);
+		mHandler = new Handler();
+		mOrientationListener = new MyOrientationListener(mContext);
+		try {
+			mOrientationListener.setCurrentRotation(windowManager.getRotation());
+		} catch (RemoteException ex) { }
+		SettingsObserver settingsObserver = new SettingsObserver(mHandler);
+		settingsObserver.observe();
+		mShortcutManager = new ShortcutManager(context, mHandler);
+		mShortcutManager.observe();
+		mHomeIntent =  new Intent(Intent.ACTION_MAIN, null);
+		mHomeIntent.addCategory(Intent.CATEGORY_HOME);
+		mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+			| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+		mCarDockIntent =  new Intent(Intent.ACTION_MAIN, null);
+		mCarDockIntent.addCategory(Intent.CATEGORY_CAR_DOCK);
+		mCarDockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+			| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+		mDeskDockIntent =  new Intent(Intent.ACTION_MAIN, null);
+		mDeskDockIntent.addCategory(Intent.CATEGORY_DESK_DOCK);
+		mDeskDockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+			| Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
 
-PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-mBroadcastWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-"PhoneWindowManager.mBroadcastWakeLock");
-mEnableShiftMenuBugReports = "1".equals(SystemProperties.get("ro.debuggable"));
-mLidOpenRotation = readRotation(
-com.android.internal.R.integer.config_lidOpenRotation);
-mCarDockRotation = readRotation(
-com.android.internal.R.integer.config_carDockRotation);
-mDeskDockRotation = readRotation(
-com.android.internal.R.integer.config_deskDockRotation);
-mCarDockEnablesAccelerometer = mContext.getResources().getBoolean(
-com.android.internal.R.bool.config_carDockEnablesAccelerometer);
-mDeskDockEnablesAccelerometer = mContext.getResources().getBoolean(
-com.android.internal.R.bool.config_deskDockEnablesAccelerometer);
-mLidKeyboardAccessibility = mContext.getResources().getInteger(
-com.android.internal.R.integer.config_lidKeyboardAccessibility);
-mLidNavigationAccessibility = mContext.getResources().getInteger(
-com.android.internal.R.integer.config_lidNavigationAccessibility);
-// register for dock events
-IntentFilter filter = new IntentFilter();
-filter.addAction(UiModeManager.ACTION_ENTER_CAR_MODE);
-filter.addAction(UiModeManager.ACTION_EXIT_CAR_MODE);
-filter.addAction(UiModeManager.ACTION_ENTER_DESK_MODE);
-filter.addAction(UiModeManager.ACTION_EXIT_DESK_MODE);
-filter.addAction(Intent.ACTION_DOCK_EVENT);
-Intent intent = context.registerReceiver(mDockReceiver, filter);
-if (intent != null) {
-// Retrieve current sticky dock event broadcast.
-mDockMode = intent.getIntExtra(Intent.EXTRA_DOCK_STATE,
-Intent.EXTRA_DOCK_STATE_UNDOCKED);
-}
+		PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+		mBroadcastWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+			"PhoneWindowManager.mBroadcastWakeLock");
 
-mVibrator = new Vibrator();
-mLongPressVibePattern = getLongIntArray(mContext.getResources(),
-com.android.internal.R.array.config_longPressVibePattern);
-mVirtualKeyVibePattern = getLongIntArray(mContext.getResources(),
-com.android.internal.R.array.config_virtualKeyVibePattern);
-mKeyboardTapVibePattern = getLongIntArray(mContext.getResources(),
-com.android.internal.R.array.config_keyboardTapVibePattern);
-mSafeModeDisabledVibePattern = getLongIntArray(mContext.getResources(),
-com.android.internal.R.array.config_safeModeDisabledVibePattern);
-mSafeModeEnabledVibePattern = getLongIntArray(mContext.getResources(),
-com.android.internal.R.array.config_safeModeEnabledVibePattern);
+		mEnableShiftMenuBugReports = "1".equals(SystemProperties.get("ro.debuggable"));
+		mLidOpenRotation = readRotation(
+			com.android.internal.R.integer.config_lidOpenRotation);
+		mCarDockRotation = readRotation(
+			com.android.internal.R.integer.config_carDockRotation);
+		mDeskDockRotation = readRotation(
+			com.android.internal.R.integer.config_deskDockRotation);
+		mCarDockEnablesAccelerometer = mContext.getResources().getBoolean(
+			com.android.internal.R.bool.config_carDockEnablesAccelerometer);
+		mDeskDockEnablesAccelerometer = mContext.getResources().getBoolean(
+			com.android.internal.R.bool.config_deskDockEnablesAccelerometer);
+		mLidKeyboardAccessibility = mContext.getResources().getInteger(
+			com.android.internal.R.integer.config_lidKeyboardAccessibility);
+		mLidNavigationAccessibility = mContext.getResources().getInteger(
+			com.android.internal.R.integer.config_lidNavigationAccessibility);
+		// register for dock events
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(UiModeManager.ACTION_ENTER_CAR_MODE);
+		filter.addAction(UiModeManager.ACTION_EXIT_CAR_MODE);
+		filter.addAction(UiModeManager.ACTION_ENTER_DESK_MODE);
+		filter.addAction(UiModeManager.ACTION_EXIT_DESK_MODE);
+		filter.addAction(Intent.ACTION_DOCK_EVENT);
+		Intent intent = context.registerReceiver(mDockReceiver, filter);
+		if (intent != null) {
+			// Retrieve current sticky dock event broadcast.
+			mDockMode = intent.getIntExtra(Intent.EXTRA_DOCK_STATE,
+				Intent.EXTRA_DOCK_STATE_UNDOCKED);
+		}
 
-// Controls rotation and the like.
-initializeHdmiState();
+		mVibrator = new Vibrator();
+		mLongPressVibePattern = getLongIntArray(mContext.getResources(),
+			com.android.internal.R.array.config_longPressVibePattern);
+		mVirtualKeyVibePattern = getLongIntArray(mContext.getResources(),
+			com.android.internal.R.array.config_virtualKeyVibePattern);
+		mKeyboardTapVibePattern = getLongIntArray(mContext.getResources(),
+			com.android.internal.R.array.config_keyboardTapVibePattern);
+		mSafeModeDisabledVibePattern = getLongIntArray(mContext.getResources(),
+			com.android.internal.R.array.config_safeModeDisabledVibePattern);
+		mSafeModeEnabledVibePattern = getLongIntArray(mContext.getResources(),
+			com.android.internal.R.array.config_safeModeEnabledVibePattern);
 
-// Match current screen state.
-if (mPowerManager.isScreenOn()) {
-screenTurningOn(null);
-} else {
-screenTurnedOff(WindowManagerPolicy.OFF_BECAUSE_OF_USER);
-}
-}
+		// Controls rotation and the like.
+		initializeHdmiState();
+
+		// Match current screen state.
+		if (mPowerManager.isScreenOn()) {
+			screenTurningOn(null);
+		} else {
+			screenTurnedOff(WindowManagerPolicy.OFF_BECAUSE_OF_USER);
+		}
+	}
 
 public void setInitialDisplaySize(int width, int height) {
 int shortSize;
@@ -988,43 +989,41 @@ mStatusBarCanHide
 : com.android.internal.R.dimen.system_bar_height);
 
 
-if (mNavBarFirstBootFlag){
-mHasNavigationBar = mContext.getResources().getBoolean(
-com.android.internal.R.bool.config_showNavigationBar);
-// I also want to clear out any stale Navigation Hide settings
-Settings.System.putInt(mContext.getContentResolver(),
-Settings.System.NAVIGATION_BAR_HIDE,
-mHasNavigationBar ? 0 : 1);
-mNavBarFirstBootFlag = false;
-} else {
-mHasNavigationBar = Settings.System.getInt(mContext.getContentResolver(),
-Settings.System.NAVIGATION_BAR_HIDE, 0) == 0;
-}
-// Allow a system property to override this. Used by the emulator.
-// See also hasNavigationBar().
-String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
-if (! "".equals(navBarOverride)) {
-if      (navBarOverride.equals("1")) mHasNavigationBar = false;
-else if (navBarOverride.equals("0")) mHasNavigationBar = true;
-}
+		if (mNavBarFirstBootFlag){
+			mHasNavigationBar = mContext.getResources().getBoolean(
+				com.android.internal.R.bool.config_showNavigationBar);
+			// I also want to clear out any stale Navigation Hide settings
+			Settings.System.putInt(mContext.getContentResolver(), Settings.System.NAVIGATION_BAR_HIDE, mHasNavigationBar ? 0 : 1);
+					mNavBarFirstBootFlag = false;
+		} else {
+			mHasNavigationBar = Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.NAVIGATION_BAR_HIDE, 0) == 0;
+		}
+		// Allow a system property to override this. Used by the emulator.
+		// See also hasNavigationBar().
+		String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
+		if (! "".equals(navBarOverride)) {
+			if      (navBarOverride.equals("1")) mHasNavigationBar = false;
+			else if (navBarOverride.equals("0")) mHasNavigationBar = true;
+		}
 
-if (mHasNavigationBar) {
-mNavigationBarHeight = Settings.System.getInt(
-mContext.getContentResolver(),
-Settings.System.NAVIGATION_BAR_HEIGHT,
-mContext.getResources()
-.getDimensionPixelSize(
-com.android.internal.R.dimen.navigation_bar_height));
-mNavigationBarWidth = Settings.System.getInt(
-mContext.getContentResolver(),
-Settings.System.NAVIGATION_BAR_WIDTH,
-mContext.getResources()
-.getDimensionPixelSize(
-com.android.internal.R.dimen.navigation_bar_width));
-} else {
-mNavigationBarHeight = 0;
-mNavigationBarWidth = 0;
-}
+		if (mHasNavigationBar) {
+			mNavigationBarHeight = Settings.System.getInt(
+					mContext.getContentResolver(),
+					Settings.System.NAVIGATION_BAR_HEIGHT,
+					mContext.getResources()
+					.getDimensionPixelSize(
+						com.android.internal.R.dimen.navigation_bar_height));
+			mNavigationBarWidth = Settings.System.getInt(
+					mContext.getContentResolver(),
+					Settings.System.NAVIGATION_BAR_WIDTH,
+					mContext.getResources()
+					.getDimensionPixelSize(
+						com.android.internal.R.dimen.navigation_bar_width));
+		} else {
+			mNavigationBarHeight = 0;
+			mNavigationBarWidth = 0;
+		}
 
 
 if ("portrait".equals(SystemProperties.get("persist.demo.hdmirotation"))) {

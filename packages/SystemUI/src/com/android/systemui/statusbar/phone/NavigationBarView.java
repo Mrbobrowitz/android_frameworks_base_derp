@@ -242,6 +242,8 @@ public class NavigationBarView extends LinearLayout {
 
 		} else if (mNavButtons == RECENTS_FOR_SEARCH) {
 			getRecentsButton().setVisibility(View.GONE);
+			getSearchButton() .setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
+
 
 		} else if (mNavButtons == ADD_SEARCH_TO_NAV) {
 			getRecentsButton().setVisibility(disableRecent     ? View.INVISIBLE : View.VISIBLE);
@@ -258,10 +260,10 @@ public class NavigationBarView extends LinearLayout {
 			mShowMenu = show;
 			boolean localShow = show;
 
-		int currentSetting = Settings.System.getInt(getContext().getContentResolver(),
+		int currentSetting = Settings.System.getInt(mContext.getContentResolver(),
 				Settings.System.MENU_LOCATION, SHOW_RIGHT_MENU);
 
-		int currentVisibility = Settings.System.getInt(getContext().getContentResolver(),
+		int currentVisibility = Settings.System.getInt(mContext.getContentResolver(),
 				Settings.System.MENU_VISIBILITY, VISIBILITY_SYSTEM);
 
 		switch (currentVisibility) {

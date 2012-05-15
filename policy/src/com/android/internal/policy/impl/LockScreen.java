@@ -443,7 +443,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 		MultiWaveViewMethods(MultiWaveView multiWaveView) {
 			mMultiWaveView = multiWaveView;
 			final boolean cameraDisabled = mLockPatternUtils
-			.getDevicePolicyManager().getCameraDisabled(null);
+						.getDevicePolicyManager().getCameraDisabled(null);
 			if (cameraDisabled || mForceSoundIcon) {
 				Log.v(TAG, "Camera disabled by Device Policy");
 				mCameraDisabled = true;
@@ -973,9 +973,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			
 			mKeyboardHidden = configuration.hardKeyboardHidden;
 			
+			SettingsObserver settingsObserver = new SettingsObserver(new Handler());
+			settingsObserver.observe();
+			
 			if (mCustomAppIcon == null)
 				mCustomAppIcon = BitmapFactory.decodeResource(getContext()
-															  .getResources(), R.drawable.ic_jog_dial_custom);
+											.getResources(), R.drawable.ic_jog_dial_custom);
 			
 			if (LockPatternKeyguardView.DEBUG_CONFIGURATION) {
 				Log.v(TAG, "***** CREATING LOCK SCREEN", new RuntimeException());
@@ -1028,15 +1031,18 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			}
 			
 			mStatusViewManager = new KeyguardStatusViewManager(this,
-															   mUpdateMonitor, mLockPatternUtils, mCallback, false);
+							mUpdateMonitor, mLockPatternUtils, mCallback, false);
 			
 			setFocusable(true);
 			setFocusableInTouchMode(true);
 			setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
 			
 			mAudioManager = (AudioManager) mContext
-			.getSystemService(Context.AUDIO_SERVICE);
+							.getSystemService(Context.AUDIO_SERVICE);
 			mSilentMode = isSilentMode();
+			
+			mDigitalClock = (DigitalClock) findViewById(R.id.time);
+			mCarrier = (TextView) findViewById(R.id.carrier);
 			
 			mUnlockWidget = findViewById(R.id.unlock_widget);
 			mUnlockWidget2 = findViewById(R.id.unlock_widget2);
@@ -1218,6 +1224,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			
 			// Update widget with initial ring state
 			mUnlockWidgetMethods.updateResources();
+			// Update the settings everytime we draw lockscreen
+			updateSettings();
 			
 			if (DBG)
 				Log.v(TAG,
@@ -1260,6 +1268,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 					  + getResources().getConfiguration());
 			}
 			updateConfiguration();
+			updateSettings();
 		}
 		
 		/** {@inheritDoc} */
@@ -1295,6 +1304,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 		public void onResume() {
 			mStatusViewManager.onResume();
 			postDelayed(mOnResumePing, ON_RESUME_PING_DELAY);
+			// update the settings when we resume
+			if (DEBUG) Log.d(TAG, "We are resuming and want to update settings");
+			updateSettings();
 		}
 
 		/** {@inheritDoc} */
@@ -1395,6 +1407,10 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 				resolver.registerContentObserver(
 											 Settings.System.getUriFor(Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR),
 											 false, this);
+				updateSettings();
+			}
+			
+			public void onChange(boolean selfChange) {
 				updateSettings();
 			}
 		}

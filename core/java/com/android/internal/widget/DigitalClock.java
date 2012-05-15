@@ -241,7 +241,7 @@ public class DigitalClock extends RelativeLayout {
 		ContentResolver resolver = mContext.getContentResolver();
 		// our custom lockscreen colors need to be applied here
 		int mLockscreenColor = Settings.System.getInt(resolver,
-													  Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR, COLOR_WHITE);
+				Settings.System.LOCKSCREEN_CUSTOM_TEXT_COLOR, COLOR_WHITE);
 		mTimeDisplayBackground.setTextColor(mLockscreenColor);
 		mTimeDisplayForeground.setTextColor(mLockscreenColor);
     }

@@ -218,7 +218,7 @@ public class DevicePolicyManager {
      * an individual to about a 3 digit PIN (false detection is less than 1 in 1,000).
      * Note that quality constants are ordered so that higher values are more restrictive.
      */
-    public static final int PASSWORD_QUALITY_BIOMETRIC_WEAK = 0x08000;
+    public static final int PASSWORD_QUALITY_BIOMETRIC_WEAK = 0x8000;
 	
     /**
      * Constant for {@link #setPasswordQuality}: the policy requires some kind

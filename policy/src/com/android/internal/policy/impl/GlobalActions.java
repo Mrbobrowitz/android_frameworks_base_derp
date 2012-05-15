@@ -17,36 +17,50 @@
 
 package com.android.internal.policy.impl;
 
-import android.app.Activity;
+import java.util.ArrayList;
+
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.util.Slog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.KeyEvent;
 import android.view.WindowManager;
+import android.view.IWindowManager;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import com.android.internal.R;
 import com.android.internal.app.ShutdownThread;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.TelephonyProperties;
 import com.google.android.collect.Lists;
 
-import java.util.ArrayList;
+import com.android.internal.app.ThemeUtils;
+
+import java.util.UUID;
 
 /**
  * Helper to show the global actions dialog.  Each item is an {@link Action} that
@@ -61,6 +75,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 	
     private final Context mContext;
     private final AudioManager mAudioManager;
+	private Context mUiContext;
 	
     private ArrayList<Action> mItems;
     private AlertDialog mDialog;
@@ -89,6 +104,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         filter.addAction(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED);
         context.registerReceiver(mBroadcastReceiver, filter);
 		
+		ThemeUtils.registerThemeChangeReceiver(context, mThemeChangeReceiver);
+		
         // get notified of phone state changes
         TelephonyManager telephonyManager =
 		(TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
@@ -102,14 +119,27 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
-        if (mDialog == null) {
-            mDialog = createDialog();
+		
+        if (mDialog != null && mUiContext == null) {
+            mDialog.dismiss();
+			mDialog = null;
         }
+		
+		//always update the PowerMenu dialog
+		mDialog = createDialog();
+		
         prepareDialog();
 		
         mDialog.show();
         mDialog.getWindow().getDecorView().setSystemUiVisibility(View.STATUS_BAR_DISABLE_EXPAND);
     }
+	
+	private Context getUiContext() {
+		if (mUiContext == null) {
+			mUiContext = ThemeUtils.createUiContext(mContext);
+		}
+		return mUiContext != null ? mUiContext : mContext;
+	}
 	
     /**
      * Create the global actions dialog.
@@ -166,7 +196,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 			
 			public void onPress() {
 				// shutdown by making sure radio and power are handled accordingly.
-				ShutdownThread.shutdown(mContext, true);
+				ShutdownThread.shutdown(getUiContext(), true);
 			}
 			
 			public boolean showDuringKeyguard() {
@@ -204,7 +234,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 		
         mAdapter = new MyAdapter();
 		
-        final AlertDialog.Builder ab = new AlertDialog.Builder(mContext);
+        final AlertDialog.Builder ab = new AlertDialog.Builder(getUiContext());
 		
         ab.setAdapter(mAdapter, this)
 		.setInverseBackgroundForced(true);
@@ -316,7 +346,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 		
         public View getView(int position, View convertView, ViewGroup parent) {
             Action action = getItem(position);
-            return action.create(mContext, convertView, parent, LayoutInflater.from(mContext));
+            final Context context = getUiContext();
+			return action.create(context, convertView, parent, LayoutInflater.from(context));
         }
     }
 	
@@ -574,72 +605,78 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     }
 	
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-	public void onReceive(Context context, Intent intent) {
-	String action = intent.getAction();
-	if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)
-		|| Intent.ACTION_SCREEN_OFF.equals(action)) {
-		String reason = intent.getStringExtra(PhoneWindowManager.SYSTEM_DIALOG_REASON_KEY);
-		if (!PhoneWindowManager.SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS.equals(reason)) {
-			mHandler.sendEmptyMessage(MESSAGE_DISMISS);
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)
+					|| Intent.ACTION_SCREEN_OFF.equals(action)) {
+				String reason = intent.getStringExtra(PhoneWindowManager.SYSTEM_DIALOG_REASON_KEY);
+				if (!PhoneWindowManager.SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS.equals(reason)) {
+					mHandler.sendEmptyMessage(MESSAGE_DISMISS);
+				}
+			} else if (TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED.equals(action)) {
+				// Airplane mode can be changed after ECM exits if airplane toggle button
+				// is pressed during ECM mode
+				if (!(intent.getBooleanExtra("PHONE_IN_ECM_STATE", false)) &&
+					mIsWaitingForEcmExit) {
+					mIsWaitingForEcmExit = false;
+					changeAirplaneModeSystemSetting(true);
+				}
+			}
 		}
-	} else if (TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED.equals(action)) {
-		// Airplane mode can be changed after ECM exits if airplane toggle button
-		// is pressed during ECM mode
-		if (!(intent.getBooleanExtra("PHONE_IN_ECM_STATE", false)) &&
-			mIsWaitingForEcmExit) {
-			mIsWaitingForEcmExit = false;
-			changeAirplaneModeSystemSetting(true);
+	};
+
+	private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			mUiContext = null;
 		}
+	};
+
+	PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
+	@Override
+		public void onServiceStateChanged(ServiceState serviceState) {
+			final boolean inAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
+			mAirplaneState = inAirplaneMode ? ToggleAction.State.On : ToggleAction.State.Off;
+			mAirplaneModeOn.updateState(mAirplaneState);
+			mAdapter.notifyDataSetChanged();
+		}
+	};
+
+	private BroadcastReceiver mRingerModeReceiver = new BroadcastReceiver() {
+	@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent.getAction().equals(AudioManager.RINGER_MODE_CHANGED_ACTION)) {
+				mHandler.sendEmptyMessage(MESSAGE_REFRESH);
+			}
+		}
+	};
+
+	private static final int MESSAGE_DISMISS = 0;
+	private static final int MESSAGE_REFRESH = 1;
+	private static final int DIALOG_DISMISS_DELAY = 300; // ms
+
+	private Handler mHandler = new Handler() {
+		public void handleMessage(Message msg) {
+			if (msg.what == MESSAGE_DISMISS) {
+				if (mDialog != null) {
+					mDialog.dismiss();
+				}
+			} else if (msg.what == MESSAGE_REFRESH) {
+				mAdapter.notifyDataSetChanged();
+			}
+		}
+	};
+
+	/**
+	 * Change the airplane mode system setting
+	 */
+	private void changeAirplaneModeSystemSetting(boolean on) {
+		Settings.System.putInt(
+				mContext.getContentResolver(),
+				Settings.System.AIRPLANE_MODE_ON,
+				on ? 1 : 0);
+		Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+		intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
+		intent.putExtra("state", on);
+		mContext.sendBroadcast(intent);
 	}
-}
-};
-
-PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
-@Override
-public void onServiceStateChanged(ServiceState serviceState) {
-final boolean inAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
-mAirplaneState = inAirplaneMode ? ToggleAction.State.On : ToggleAction.State.Off;
-mAirplaneModeOn.updateState(mAirplaneState);
-mAdapter.notifyDataSetChanged();
-}
-};
-
-private BroadcastReceiver mRingerModeReceiver = new BroadcastReceiver() {
-@Override
-public void onReceive(Context context, Intent intent) {
-if (intent.getAction().equals(AudioManager.RINGER_MODE_CHANGED_ACTION)) {
-mHandler.sendEmptyMessage(MESSAGE_REFRESH);
-}
-}
-};
-
-private static final int MESSAGE_DISMISS = 0;
-private static final int MESSAGE_REFRESH = 1;
-private static final int DIALOG_DISMISS_DELAY = 300; // ms
-
-private Handler mHandler = new Handler() {
-public void handleMessage(Message msg) {
-if (msg.what == MESSAGE_DISMISS) {
-if (mDialog != null) {
-mDialog.dismiss();
-}
-} else if (msg.what == MESSAGE_REFRESH) {
-mAdapter.notifyDataSetChanged();
-}
-}
-};
-
-/**
- * Change the airplane mode system setting
- */
-private void changeAirplaneModeSystemSetting(boolean on) {
-Settings.System.putInt(
-mContext.getContentResolver(),
-Settings.System.AIRPLANE_MODE_ON,
-on ? 1 : 0);
-Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
-intent.putExtra("state", on);
-mContext.sendBroadcast(intent);
-}
 }

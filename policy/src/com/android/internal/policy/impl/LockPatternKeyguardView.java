@@ -20,6 +20,7 @@ import com.android.internal.R;
 import com.android.internal.policy.impl.LockPatternKeyguardView.UnlockMode;
 import com.android.internal.policy.IFaceLockCallback;
 import com.android.internal.policy.IFaceLockInterface;
+import com.android.internal.app.ThemeUtils;
 import com.android.internal.telephony.IccCard;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.LockScreenWidgetCallback;
@@ -65,6 +66,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
+import android.content.BroadcastReceiver;
+
 
 import java.io.IOException;
 
@@ -101,6 +104,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 
     private View mLockScreen;
     private View mUnlockScreen;
+	private Context mUiContext;
 
     private volatile boolean mScreenOn = false;
     private volatile boolean mWindowFocused = false;
@@ -199,6 +203,12 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
          */
         Unknown
     }
+			
+	private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			mUiContext = null;
+		}
+	};
 
     /**
      * The current mode.
@@ -730,6 +740,12 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         mUnlockScreen.setVisibility(View.INVISIBLE);
         addView(mUnlockScreen);
     }
+	
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		ThemeUtils.registerThemeChangeReceiver(mContext, mThemeChangeReceiver);
+	}
 
     @Override
     protected void onDetachedFromWindow() {
@@ -738,6 +754,9 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
         // When view is hidden, need to unbind from FaceLock service if we are using FaceLock
         // e.g., when device becomes unlocked
         stopAndUnbindFromFaceLock();
+
+		mContext.unregisterReceiver(mThemeChangeReceiver);
+		mUiContext = null;
 
         super.onDetachedFromWindow();
     }
@@ -1105,7 +1124,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
     }
 
     private void showDialog(String title, String message) {
-        final AlertDialog dialog = new AlertDialog.Builder(mContext)
+        final AlertDialog dialog = new AlertDialog.Builder(getUiContext())
             .setTitle(title)
             .setMessage(message)
             .setNeutralButton(R.string.ok, null)
@@ -1130,6 +1149,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
 
         showDialog(null, message);
     }
+	
+	
 
     private void showAlmostAtAccountLoginDialog() {
         final int timeoutInSeconds = (int) LockPatternUtils.FAILED_ATTEMPT_TIMEOUT_MS / 1000;
@@ -1139,6 +1160,13 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
                 count, LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT, timeoutInSeconds);
         showDialog(null, message);
     }
+
+	private Context getUiContext() {
+		if (mUiContext == null) {
+			mUiContext = ThemeUtils.createUiContext(mContext);
+		}
+		return mUiContext != null ? mUiContext : mContext;
+	}
 
     private void showAlmostAtWipeDialog(int attempts, int remaining) {
         int timeoutInSeconds = (int) LockPatternUtils.FAILED_ATTEMPT_TIMEOUT_MS / 1000;

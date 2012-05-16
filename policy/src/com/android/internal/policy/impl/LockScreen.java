@@ -56,9 +56,8 @@ import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.widget.TextView;				// Needed to color lockscreen text
-import android.database.ContentObserver;	// Needed to color lockscreen text
-
+import android.widget.TextView;				
+import android.database.ContentObserver;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -973,9 +972,6 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			
 			mKeyboardHidden = configuration.hardKeyboardHidden;
 			
-			SettingsObserver settingsObserver = new SettingsObserver(new Handler());
-			settingsObserver.observe();
-			
 			if (mCustomAppIcon == null)
 				mCustomAppIcon = BitmapFactory.decodeResource(getContext()
 											.getResources(), R.drawable.ic_jog_dial_custom);
@@ -1224,6 +1220,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 			
 			// Update widget with initial ring state
 			mUnlockWidgetMethods.updateResources();
+			
 			// Update the settings everytime we draw lockscreen
 			updateSettings();
 			

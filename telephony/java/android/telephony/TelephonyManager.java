@@ -470,9 +470,9 @@ public class TelephonyManager {
         }
     }
     
-    public void toggleLTE(boolean on) {
+    public void LTEtoggle(boolean on) {
         try {
-            getITelephony().toggleLTE(on);
+            getITelephony().LTEtoggle(on);
         } catch (RemoteException e) {
             //Silently fail
         }

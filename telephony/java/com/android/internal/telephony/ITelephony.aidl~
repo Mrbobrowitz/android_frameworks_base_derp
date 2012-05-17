@@ -47,7 +47,7 @@ interface ITelephony {
      * Toggle for 4G LTE and CDMA
      * @param boolean for turning LTE off and on
      */
-    void LTEtoggle(boolean on);
+    void toggleLTE(boolean on);
 
     /**
      * If there is currently a call in progress, show the call screen.

@@ -22,26 +22,27 @@ package com.android.internal.telephony.cat;
  * {@hide}
  */
 public interface AppInterface {
-
+	
     /*
      * Intent's actions which are broadcasted by the Telephony once a new CAT
      * proactive command, session end arrive.
      */
     public static final String CAT_CMD_ACTION =
-                                    "android.intent.action.stk.command";
+	"android.intent.action.stk.command";
     public static final String CAT_SESSION_END_ACTION =
-                                    "android.intent.action.stk.session_end";
-
+	"android.intent.action.stk.session_end";
+	
     /*
      * Callback function from app to telephony to pass a result code and user's
      * input back to the ICC.
      */
     void onCmdResponse(CatResponseMessage resMsg);
-
+	
     /*
      * Enumeration for representing "Type of Command" of proactive commands.
      * Those are the only commands which are supported by the Telephony. Any app
      * implementation should support those.
+     * Refer to ETSI TS 102.223 section 9.4
      */
     public static enum CommandType {
         DISPLAY_TEXT(0x21),
@@ -59,18 +60,22 @@ public interface AppInterface {
         SET_UP_IDLE_MODE_TEXT(0x28),
         SET_UP_MENU(0x25),
         SET_UP_CALL(0x10),
-        PROVIDE_LOCAL_INFORMATION(0x26);
-
+        PROVIDE_LOCAL_INFORMATION(0x26),
+        OPEN_CHANNEL(0x40),
+        CLOSE_CHANNEL(0x41),
+        RECEIVE_DATA(0x42),
+        SEND_DATA(0x43);
+		
         private int mValue;
-
+		
         CommandType(int value) {
             mValue = value;
         }
-
+		
         public int value() {
             return mValue;
         }
-
+		
         /**
          * Create a CommandType object.
          *

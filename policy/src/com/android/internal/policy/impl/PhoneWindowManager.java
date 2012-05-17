@@ -3138,24 +3138,24 @@ break;
 return result;
 }
 
-/** {@inheritDoc} */
-@Override
-public int interceptMotionBeforeQueueingWhenScreenOff(int policyFlags) {
-int result = 0;
+	/** {@inheritDoc} */
+	@Override
+	public int interceptMotionBeforeQueueingWhenScreenOff(int policyFlags) {
+		int result = 0;
 
-final boolean isWakeMotion = (policyFlags
-& (WindowManagerPolicy.FLAG_WAKE | WindowManagerPolicy.FLAG_WAKE_DROPPED)) != 0;
-if (isWakeMotion) {
-if (mKeyguardMediator.isShowing()) {
-// If the keyguard is showing, let it decide what to do with the wake motion.
-mKeyguardMediator.onWakeMotionWhenKeyguardShowingTq();
-} else {
-// Otherwise, wake the device ourselves.
-result |= ACTION_POKE_USER_ACTIVITY;
-}
-}
-return result;
-}
+		final boolean isWakeMotion = (policyFlags
+				& (WindowManagerPolicy.FLAG_WAKE | WindowManagerPolicy.FLAG_WAKE_DROPPED)) != 0;
+		if (isWakeMotion) {
+			if (mKeyguardMediator.isShowing()) {
+				// If the keyguard is showing, let it decide what to do with the wake motion.
+				mKeyguardMediator.onWakeMotionWhenKeyguardShowingTq();
+			} else {
+				// Otherwise, wake the device ourselves.
+				result |= ACTION_POKE_USER_ACTIVITY;
+			}
+		}
+		return result;
+	}
 
 
 class PassHeadsetKey implements Runnable {
@@ -3219,86 +3219,86 @@ updateLockScreenTimeout();
 }
 }
 
-/** {@inheritDoc} */
-public void screenTurningOn(final ScreenOnListener screenOnListener) {
-EventLog.writeEvent(70000, 1);
-if (false) {
-RuntimeException here = new RuntimeException("here");
-here.fillInStackTrace();
-Slog.i(TAG, "Screen turning on...", here);
-}
-if (screenOnListener != null) {
-mKeyguardMediator.onScreenTurnedOn(new KeyguardViewManager.ShowListener() {
-@Override public void onShown(IBinder windowToken) {
-if (windowToken != null) {
-try {
-mWindowManager.waitForWindowDrawn(windowToken,
-new IRemoteCallback.Stub() {
-@Override public void sendResult(Bundle data) {
-Slog.i(TAG, "Lock screen displayed!");
-screenOnListener.onScreenOn();
-synchronized (mLock) {
-mScreenOnFully = true;
-}
-}
-});
-} catch (RemoteException e) {
-}
-} else {
-Slog.i(TAG, "No lock screen!");
-screenOnListener.onScreenOn();
-synchronized (mLock) {
-mScreenOnFully = true;
-}
-}
-}
-});
-} else {
-synchronized (mLock) {
-mScreenOnFully = true;
-}
-}
-synchronized (mLock) {
-mScreenOnEarly = true;
-updateOrientationListenerLp();
-updateLockScreenTimeout();
-}
-}
+	/** {@inheritDoc} */
+	public void screenTurningOn(final ScreenOnListener screenOnListener) {
+		EventLog.writeEvent(70000, 1);
+			if (false) {
+				RuntimeException here = new RuntimeException("here");
+				here.fillInStackTrace();
+				Slog.i(TAG, "Screen turning on...", here);
+			}
+			if (screenOnListener != null) {
+				mKeyguardMediator.onScreenTurnedOn(new KeyguardViewManager.ShowListener() {
+					@Override public void onShown(IBinder windowToken) {
+						if (windowToken != null) {
+							try {
+								mWindowManager.waitForWindowDrawn(windowToken,
+									new IRemoteCallback.Stub() {
+									@Override public void sendResult(Bundle data) {
+										Slog.i(TAG, "Lock screen displayed!");
+										screenOnListener.onScreenOn();
+										synchronized (mLock) {
+											mScreenOnFully = true;
+										}
+									}
+								});
+							} catch (RemoteException e) {
+							}
+						} else {
+							Slog.i(TAG, "No lock screen!");
+							screenOnListener.onScreenOn();
+							synchronized (mLock) {
+								mScreenOnFully = true;
+						}
+					}
+				}
+			});
+		} else {
+			synchronized (mLock) {
+				mScreenOnFully = true;
+			}
+		}
+		synchronized (mLock) {
+			mScreenOnEarly = true;
+			updateOrientationListenerLp();
+			updateLockScreenTimeout();
+		}
+	}
 
-/** {@inheritDoc} */
-public boolean isScreenOnEarly() {
-return mScreenOnEarly;
-}
+	/** {@inheritDoc} */
+	public boolean isScreenOnEarly() {
+		return mScreenOnEarly;
+	}
 
-/** {@inheritDoc} */
-public boolean isScreenOnFully() {
-return mScreenOnFully;
-}
+	/** {@inheritDoc} */
+	public boolean isScreenOnFully() {
+		return mScreenOnFully;
+	}
 
-/** {@inheritDoc} */
-public void enableKeyguard(boolean enabled) {
-mKeyguardMediator.setKeyguardEnabled(enabled);
-}
+	/** {@inheritDoc} */
+	public void enableKeyguard(boolean enabled) {
+		mKeyguardMediator.setKeyguardEnabled(enabled);
+	}
 
-/** {@inheritDoc} */
-public void exitKeyguardSecurely(OnKeyguardExitResult callback) {
-mKeyguardMediator.verifyUnlock(callback);
-}
+	/** {@inheritDoc} */
+	public void exitKeyguardSecurely(OnKeyguardExitResult callback) {
+		mKeyguardMediator.verifyUnlock(callback);
+	}
 
-private boolean keyguardIsShowingTq() {
-return mKeyguardMediator.isShowingAndNotHidden();
-}
+	private boolean keyguardIsShowingTq() {
+		return mKeyguardMediator.isShowingAndNotHidden();
+	}
 
 
-/** {@inheritDoc} */
-public boolean isKeyguardLocked() {
-return keyguardOn();
-}
+	/** {@inheritDoc} */
+	public boolean isKeyguardLocked() {
+		return keyguardOn();
+	}
 
-/** {@inheritDoc} */
-public boolean isKeyguardSecure() {
-return mKeyguardMediator.isSecure();
-}
+	/** {@inheritDoc} */
+	public boolean isKeyguardSecure() {
+		return mKeyguardMediator.isSecure();
+	}
 
 /** {@inheritDoc} */
 public boolean inKeyguardRestrictedKeyInputMode() {

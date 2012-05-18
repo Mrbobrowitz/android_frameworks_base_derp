@@ -2445,6 +2445,16 @@ public final class Settings {
 		
 		public static final String MENU_VISIBILITY = "menu_visibility";
 		
+		 public static final String POWER_DIALOG_SHOW_POWER_MENU = "power_dialog_power_menu";
+		
+		public static final String POWER_DIALOG_SHOW_REBOOT_MENU = "power_dialog_reboot_menu";
+		
+		public static final String POWER_DIALOG_SHOW_SCREENSHOT = "power_dialog_show_screenshot";
+		
+		public static final String POWER_DIALOG_SHOW_AIRPLANE_MODE = "power_dialog_show_airplane_mode";
+		
+		public static final String POWER_DIALOG_SHOW_SILENT_TOGGLE = "power_dialog_show_silent_toggle";
+		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.

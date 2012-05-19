@@ -2393,11 +2393,8 @@ public class BluetoothService extends IBluetooth.Stub {
         BluetoothDeviceProfileState state =
             new BluetoothDeviceProfileState(mContext, address, this, mA2dpService, setTrust);
         BluetoothDeviceProfileState oldStateMachine  = mDeviceProfileState.put(address, state);
-        if (oldStateMachine != null) {
-            oldStateMachine.quit();
-            oldStateMachine = null;
-        }
-        state.start();
+        mDeviceProfileState.put(address, state);
+		state.start();
         return state;
     }
 

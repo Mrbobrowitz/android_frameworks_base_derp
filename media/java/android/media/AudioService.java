@@ -59,7 +59,6 @@ import android.view.KeyEvent;
 import android.view.VolumePanel;
 
 import com.android.internal.telephony.ITelephony;
-import com.android.internal.app.ThemeUtils;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -101,9 +100,7 @@ public class AudioService extends IAudioService.Stub {
 
     /** The UI */
     private VolumePanel mVolumePanel;
-	private Context mUiContext;
-	private Handler mHandler;
-
+	
     // sendMsg() flags
     /** Used when a message should be shared across all stream types. */
     private static final int SHARED_MSG = -1;
@@ -334,7 +331,6 @@ public class AudioService extends IAudioService.Stub {
     public AudioService(Context context) {
         mContext = context;
         mContentResolver = context.getContentResolver();
-		mHandler = new Handler();
         mVoiceCapable = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_voice_capable);
 
@@ -347,6 +343,7 @@ public class AudioService extends IAudioService.Stub {
                 "ro.config.sound_fx_volume",
                 SOUND_EFFECT_DEFAULT_VOLUME_DB);
 
+		mVolumePanel = new VolumePanel(context, this);
 		mForcedUseForComm = AudioSystem.FORCE_NONE;
         createAudioSystemThread();
         readPersistedSettings();
@@ -384,13 +381,6 @@ public class AudioService extends IAudioService.Stub {
         pkgFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
         pkgFilter.addDataScheme("package");
         context.registerReceiver(mReceiver, pkgFilter);
-
-		ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				mUiContext = null;
-			}	
-		});
 
         // Register for media button intent broadcasts.
         intentFilter = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);
@@ -623,7 +613,7 @@ public class AudioService extends IAudioService.Stub {
             streamType = AudioSystem.STREAM_NOTIFICATION;
         }
 
-        showVolumeChangeUi(streamType, flags); 
+        mVolumePanel.postVolumeChanged(streamType, flags);
 
         oldIndex = (oldIndex + 5) / 10;
         index = (index + 5) / 10;
@@ -2711,25 +2701,6 @@ public class AudioService extends IAudioService.Stub {
             }
         }
     }
-
-	private void showVolumeChangeUi(final int streamType, final int flags) {
-		if (mUiContext != null && mVolumePanel != null) {
-			mVolumePanel.postVolumeChanged(streamType, flags);
-		} else {
-			mHandler.post(new Runnable() {
-				@Override
-				public void run() {
-					if (mUiContext == null) {
-						mUiContext = ThemeUtils.createUiContext(mContext);
-					}
-
-					final Context context = mUiContext != null ? mUiContext : mContext;
-					mVolumePanel = new VolumePanel(context, AudioService.this);
-					mVolumePanel.postVolumeChanged(streamType, flags);
-				}
-			});
-		}
-	}
 
     //==========================================================================================
     // AudioFocus

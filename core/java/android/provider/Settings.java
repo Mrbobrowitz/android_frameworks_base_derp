@@ -2201,7 +2201,15 @@ public final class Settings {
          */
         public static final String STATUSBAR_BATTERY_ICON = "statusbar_battery_icon";
 		
-		
+		/**
+         * Setting to customize NavButtons.
+         * [0] = stock
+		 * [1] = honeycomb
+		 * [2] = windows
+		 * [3] = Droidfont
+         * @hide
+         */
+        public static final String NAVBAR_STYLE_ICON = "navbar_style_icon";
 		
         /**
          * thickness of the batteyr bar (in dp)

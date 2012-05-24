@@ -445,6 +445,9 @@ public class PhoneStatusBar extends StatusBar {
             resolver.registerContentObserver(
 					Settings.System.getUriFor(Settings.System.MENU_VISIBILITY), 
 				    false, this);
+			resolver.registerContentObserver(
+					Settings.System.getUriFor(Settings.System.NAVBAR_STYLE_ICON), 
+					false, this);
             onChange(true);
         }
 		

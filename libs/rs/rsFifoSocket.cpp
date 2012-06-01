@@ -70,9 +70,17 @@ size_t FifoSocket::read(void *data, size_t bytes) {
 }
 
 void FifoSocket::readReturn(const void *data, size_t bytes) {
+#if __APPLE_CC__ >= 5621
+    LOGE("readReturn %p %zu", data, bytes);
+#else
     LOGE("readReturn %p %Zu", data, bytes);
+#endif
     size_t ret = ::send(sv[1], data, bytes, 0);
+#if __APPLE_CC__ >= 5621
+    LOGE("readReturn %zu", ret);
+#else
     LOGE("readReturn %Zu", ret);
+#endif
     rsAssert(ret == bytes);
 }
 

@@ -366,12 +366,14 @@ implements ServiceConnection, Handler.Callback {
             super(handler);
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(Settings.Secure.getUriFor(
-																	   Settings.Secure.DEFAULT_INPUT_METHOD), false, this);
+						   Settings.Secure.DEFAULT_INPUT_METHOD), false, this);
             resolver.registerContentObserver(Settings.Secure.getUriFor(
-																	   Settings.Secure.ENABLED_INPUT_METHODS), false, this);
+						   Settings.Secure.ENABLED_INPUT_METHODS), false, this);
             resolver.registerContentObserver(Settings.Secure.getUriFor(
-																	   Settings.Secure.SELECTED_INPUT_METHOD_SUBTYPE), false, this);
-        }
+						   Settings.Secure.SELECTED_INPUT_METHOD_SUBTYPE), false, this);
+			resolver.registerContentObserver(Settings.Secure.getUriFor(
+						   Settings.System.SHOW_STATUSBAR_IME_SWITCHER), false, this);
+		}
 		
         @Override public void onChange(boolean selfChange) {
             synchronized (mMethodMap) {
@@ -414,7 +416,7 @@ implements ServiceConnection, Handler.Callback {
         public boolean onHandleForceStop(Intent intent, String[] packages, int uid, boolean doit) {
             synchronized (mMethodMap) {
                 String curInputMethodId = Settings.Secure.getString(mContext
-																	.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+								.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
                 final int N = mMethodList.size();
                 if (curInputMethodId != null) {
                     for (int i=0; i<N; i++) {
@@ -442,7 +444,7 @@ implements ServiceConnection, Handler.Callback {
             synchronized (mMethodMap) {
                 InputMethodInfo curIm = null;
                 String curInputMethodId = Settings.Secure.getString(mContext
-																	.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+								.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
                 final int N = mMethodList.size();
                 if (curInputMethodId != null) {
                     for (int i=0; i<N; i++) {
@@ -531,7 +533,7 @@ implements ServiceConnection, Handler.Callback {
         mRes = context.getResources();
         mHandler = new Handler(this);
         mIWindowManager = IWindowManager.Stub.asInterface(
-														  ServiceManager.getService(Context.WINDOW_SERVICE));
+					  ServiceManager.getService(Context.WINDOW_SERVICE));
         mCaller = new HandlerCaller(context, new HandlerCaller.Callback() {
             @Override
             public void executeMessage(Message msg) {
@@ -568,12 +570,12 @@ implements ServiceConnection, Handler.Callback {
 		
         // mSettings should be created before buildInputMethodListLocked
         mSettings = new InputMethodSettings(
-											mRes, context.getContentResolver(), mMethodMap, mMethodList);
+					mRes, context.getContentResolver(), mMethodMap, mMethodList);
         buildInputMethodListLocked(mMethodList, mMethodMap);
         mSettings.enableAllIMEsIfThereIsNoEnabledIME();
 		
         if (TextUtils.isEmpty(Settings.Secure.getString(
-														mContext.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD))) {
+						mContext.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD))) {
             InputMethodInfo defIm = null;
             for (InputMethodInfo imi: mMethodList) {
                 if (defIm == null && imi.getIsDefaultResourceId() != 0) {
@@ -635,8 +637,8 @@ implements ServiceConnection, Handler.Callback {
                 mStatusBar = statusBar;
 				statusBar.setIconVisibility("ime", false);
                 updateImeWindowStatusLocked();
-						mShowOngoingImeSwitcherForPhones = mRes.getBoolean(
-																   com.android.internal.R.bool.show_ongoing_ime_switcher);
+				// mShowOngoingImeSwitcherForPhones = mRes.getBoolean(
+							   // com.android.internal.R.bool.show_ongoing_ime_switcher);
                 try {
                     startInputInnerLocked();
                 } catch (RuntimeException e) {
@@ -1297,6 +1299,9 @@ implements ServiceConnection, Handler.Callback {
             mCurMethodId = null;
             unbindCurrentMethodLocked(true);
         }
+		
+		mShowOngoingImeSwitcherForPhones = Settings.System.getInt(mContext.getContentResolver(),
+				  Settings.System.SHOW_STATUSBAR_IME_SWITCHER, 1) == 1;
     }
 	
     /* package */ void setInputMethodLocked(String id, int subtypeId) {

@@ -2294,6 +2294,7 @@ public final class Settings {
 		 */
 		public static final String NOTIFICATION_LIGHT_COLOR = "notification_light_color";
 		
+		public static final String GOOGLE_MUSIC_IS_PLAYING = "google_music_is_playing";
 		
 		/**
 		 * Whether to wake the screen with the volume keys, the value is boolean.
@@ -2511,6 +2512,11 @@ public final class Settings {
          */
         public static final String QUIET_HOURS_DIM = "quiet_hours_dim";		
 		
+		/**
+         * @hide
+         */
+        public static final String POWER_DIALOG_SHOW_POWER_SAVER = "power_dialog_show_power_saver";
+		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
@@ -2588,9 +2594,9 @@ public final class Settings {
 			QUIET_HOURS_STILL,
 			QUIET_HOURS_DIM,
         };
-
+		
         // Settings moved to Settings.Secure
-
+		
         /**
          * @deprecated Use {@link android.provider.Settings.Secure#ADB_ENABLED}
          * instead
@@ -2901,6 +2907,8 @@ public final class Settings {
          * @hide
          */
         public static final String RECENT_APP_SWITCHER = "recent_app_switcher";
+		
+		public static final String SHOW_STATUSBAR_IME_SWITCHER = "show_statusbar_ime_switcher";
     }
 
     /**
@@ -4842,6 +4850,57 @@ public final class Settings {
             LOCK_SCREEN_OWNER_INFO,
             LOCK_SCREEN_OWNER_INFO_ENABLED
         };
+		
+		/**
+         * @hide
+         */
+        public static final String POWER_SAVER_MODE = "power_saver_mode";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_DATA_MODE = "power_saver_data_mode";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_ORIGINAL_NETWORK_ON = "power_saver_original_network_on";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_ORIGINAL_NETWORK_MODE = "power_saver_original_network_mode";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_SYNC_MODE = "power_saver_sync_mode";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_SYNC_INTERVAL = "power_saver_sync_interval";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_DATA_DELAY = "power_saver_data_delay";
+		
+		/**
+         * @hide
+         */
+        public static final String POWER_SAVER_WIFI_MODE = "power_saver_wifi_mode";
+		
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_SYNC_DATA_MODE = "power_saver_sync_data_mode";
+        
+        /**
+         * @hide
+         */
+        public static final String POWER_SAVER_SYNC_MOBILE_PREFERENCE = "power_saver_sync_mobile_preference";
+		
 
         /**
          * Helper method for determining if a location provider is enabled.

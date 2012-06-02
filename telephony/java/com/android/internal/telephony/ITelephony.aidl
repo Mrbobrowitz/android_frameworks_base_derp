@@ -50,6 +50,12 @@ interface ITelephony {
     void LTEtoggle(boolean on);
 
     /**
+     * Toggle for 2G
+     * @param boolean for turning LTE off and on
+     */
+    void toggle2G(boolean on);
+
+    /**
      * If there is currently a call in progress, show the call screen.
      * The DTMF dialpad may or may not be visible initially, depending on
      * whether it was up when the user last exited the InCallScreen.

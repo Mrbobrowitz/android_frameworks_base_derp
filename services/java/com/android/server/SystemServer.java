@@ -39,6 +39,7 @@ import android.os.SystemProperties;
 import android.provider.Settings;
 import android.server.BluetoothA2dpService;
 import android.server.BluetoothService;
+import android.server.PowerSaverService;
 import android.server.search.SearchManagerService;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -261,6 +262,7 @@ class ServerThread extends Thread {
         LocationManagerService location = null;
         CountryDetectorService countryDetector = null;
         TextServicesManagerService tsms = null;
+		PowerSaverService powerSaver = null;
 
         // Bring up services needed for UI.
         if (factoryTest != SystemServer.FACTORY_TEST_LOW_LEVEL) {
@@ -556,6 +558,13 @@ class ServerThread extends Thread {
             }
 			
 			try {
+				Slog.i(TAG, "PowerSaverService");
+				powerSaver = new PowerSaverService(context);
+			} catch(Throwable e) {
+				reportWtf("starting PowerSaver service", e);
+			}
+			
+			try {
 				Slog.i(TAG, "AssetRedirectionManager Service");
 				ServiceManager.addService("assetredirection", new AssetRedirectionManagerService(context));
 			} catch (Throwable e) {
@@ -650,6 +659,7 @@ class ServerThread extends Thread {
         final NetworkTimeUpdateService networkTimeUpdaterF = networkTimeUpdater;
         final TextServicesManagerService textServiceManagerServiceF = tsms;
         final StatusBarManagerService statusBarF = statusBar;
+		final PowerSaverService powerSaverF = powerSaver;
 
         // We now tell the activity manager it is okay to run third party
         // code.  It will call back into us once it has gotten to the state
@@ -751,6 +761,11 @@ class ServerThread extends Thread {
                 } catch (Throwable e) {
                     reportWtf("making Text Services Manager Service ready", e);
                 }
+				try {
+					if(powerSaverF != null) powerSaverF.systemReady();
+				} catch (Throwable e) {
+					reportWtf("making PowerSaverService ready", e);
+				}
             }
         });
 

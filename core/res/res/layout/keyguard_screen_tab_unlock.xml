@@ -22,8 +22,7 @@
   depending on the state of the device.  It is the same for landscape
   and portrait.-->
   
-<GridLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -130,6 +129,22 @@
             android:textSize="@dimen/keyguard_lockscreen_status_line_font_size"
             android:drawablePadding="4dip"
             android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin"
+        />
+        
+        <com.android.internal.policy.impl.LockTextSMS
+            android:id="@+id/locksms"             
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/zzstatus2"
+            android:layout_centerHorizontal="true"
+            android:lines="2"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textSize="@dimen/keyguard_lockscreen_status_line_font_size"
+            android:drawablePadding="4dip"
+            android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin"
+            android:layout_marginLeft="@dimen/keyguard_lockscreen_status_line_font_right_margin"
         />
 
     <Space android:layout_gravity="fill" 

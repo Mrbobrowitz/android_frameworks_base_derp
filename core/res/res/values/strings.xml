@@ -3455,5 +3455,9 @@
         
     <!--Application killed toast -->
     <string name="zzapp_killed_message">Application killed</string>
+    
+     <string name="global_actions_toggle_navbar_hide">Hide Navigation Bar</string>
+     <string name="global_actions_navbar_hide_on">Navigation Buttons are hidden</string>
+     <string name="global_actions_navbar_hide_off">Navigation Buttons are shown</string>
 
 </resources>

@@ -87,6 +87,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
     private SilentModeAction mSilentModeAction;
     private ToggleAction mAirplaneModeOn;
+	private ToggleAction mNavBarHideToggle;
 
     private MyAdapter mAdapter;
 
@@ -99,6 +100,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private boolean mEnableScreenshot = true;
     private boolean mEnableAirplaneMode = true;
     private boolean mEnableSilentToggle = true;
+	private boolean mEnableNavBarHideToggle = true;
 
     /**
      * @param context everything needs a context :(
@@ -168,6 +170,9 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         
         mEnableAirplaneMode = Settings.System.getInt(mContext.getContentResolver(),
                 Settings.System.POWER_DIALOG_SHOW_AIRPLANE_MODE, 1) == 1;
+		
+		mEnableNavBarHideToggle= Settings.System.getInt(mContext.getContentResolver(),
+				Settings.System.POWER_DIALOG_SHOW_NAVBAR_HIDE, 0) == 1;
         
         mEnableSilentToggle = Settings.System.getInt(mContext.getContentResolver(),
                 Settings.System.POWER_DIALOG_SHOW_SILENT_TOGGLE, 1) == 1;
@@ -209,6 +214,28 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 return true;
             }
 
+            public boolean showBeforeProvisioning() {
+                return false;
+            }
+        };
+		
+		mNavBarHideToggle = new ToggleAction(
+											 R.drawable.ic_lock_navbar_hide,
+											 R.drawable.ic_lock_navbar_hide,
+											 R.string.global_actions_toggle_navbar_hide,
+											 R.string.global_actions_navbar_hide_on,
+											 R.string.global_actions_navbar_hide_off) {
+			
+            void onToggle(boolean on) {
+                Settings.System.putInt(mContext.getContentResolver(),
+									   Settings.System.NAVIGATION_BAR_HIDE,
+									   on ? 1 : 0);
+            }
+			
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+			
             public boolean showBeforeProvisioning() {
                 return false;
             }
@@ -274,6 +301,14 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         if (mEnableAirplaneMode) {
             mItems.add(mAirplaneModeOn);
         }
+		
+		// Next NavBar Hide
+        if(mEnableNavBarHideToggle) {
+            Slog.e(TAG, "Adding NavBarhHideToggle");
+            mItems.add(mNavBarHideToggle); 
+        } else {
+            Slog.e(TAG, "not adding NavBarHideToggle");
+        }		
 
         // last: silent mode
         if (mEnableSilentToggle) {
@@ -392,6 +427,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             IntentFilter filter = new IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION);
             mContext.registerReceiver(mRingerModeReceiver, filter);
         }
+
+		final boolean navbarHideOn = Settings.System.getInt(mContext.getContentResolver(),
+			Settings.System.NAVIGATION_BAR_HIDE, 0) == 1;
+			mNavBarHideToggle.updateState(navbarHideOn ? ToggleAction.State.On : ToggleAction.State.Off);
     }
 
 

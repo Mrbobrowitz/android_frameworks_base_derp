@@ -232,6 +232,9 @@
          "name,apn,proxy,port,username,password,server,mmsc,mmsproxy,mmsport,mcc,mnc,auth,type"
          note that empty fields can be ommitted: "name,apn,,,,,,,,,310,260,,DUN" -->
     <string translatable="false" name="config_tether_apndata"></string>
+    <!-- a DUN-requiring CDMA device, the DUN APN will just support just DUN. -->
+    <string-array translatable="false" name="config_cdma_dun_supported_types">
+    </string-array>
 
     <!-- Boolean indicating whether the wifi chipset has dual frequency band support -->
     <bool translatable="false" name="config_wifi_dual_band_support">false</bool>

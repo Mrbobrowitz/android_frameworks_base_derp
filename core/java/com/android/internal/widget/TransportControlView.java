@@ -541,6 +541,12 @@ public class TransportControlView extends FrameLayout implements OnClickListener
 	}
 
 	private void setIsPlayingSystemSetting(boolean isPlaying) {
-		Settings.System.putInt(mContext.getContentResolver(), Settings.System.GOOGLE_MUSIC_IS_PLAYING, isPlaying ? 1 : 0);
+		if (isPlaying) {
+			Settings.System.putInt(mContext.getContentResolver(), Settings.System.GOOGLE_MUSIC_IS_PLAYING, isPlaying ? 1 : 0);
+			Settings.System.putInt(mContext.getContentResolver(), Settings.System.LOCKSCREEN_SMS_MUSIC, 1);
+		} else {
+			Settings.System.putInt(mContext.getContentResolver(), Settings.System.GOOGLE_MUSIC_IS_PLAYING, isPlaying ? 0 : 1);
+			Settings.System.putInt(mContext.getContentResolver(), Settings.System.LOCKSCREEN_SMS_MUSIC, 0);
+		}
 	}
 }

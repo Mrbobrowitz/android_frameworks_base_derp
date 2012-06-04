@@ -2464,6 +2464,10 @@ public final class Settings {
 		
 		public static final String POWER_DIALOG_SHOW_SILENT_TOGGLE = "power_dialog_show_silent_toggle";
 		
+		public static final String POWER_DIALOG_SHOW_NAVBAR_HIDE = "power_dialog_show_navbar_hide";
+		
+		public static final String NAVIGATION_BAR_BUTTONS_HIDE = "navigation_bar_buttons_hide";
+		
 		/**
          * Whether to enable quiet hours.
          * @hide
@@ -2890,6 +2894,26 @@ public final class Settings {
 		 * @hide
 		 */
 		public static final String STATUSBAR_NOTIFICATION_COLOR = "statusbar_notification_color";
+		
+		/**
+		 * SMS Popup on lockscreen
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_SHOW_TEXTS = "lockscreen_show_texts"; 
+		
+		/**
+		 * When using SMS popups needed a crossover to hide/show current popups with
+		 * the lock screen rebuilding each time
+		 *  1 = has been viewed
+		 *  0 = will show popup
+		 * @hide
+		 */
+		public static final String LOCKSCREEN_SMS_CROSS = "lockscreen_sms_cross";
+		
+		public static final String LOCKSCREEN_SMS_APP = "lockscreen_sms_app";
+		
+		public static final String LOCKSCREEN_SMS_COLOR = "lockscreen_sms_color"; 
+		public static final String LOCKSCREEN_SMS_MUSIC = "lockscreen_sms_music";
 		
 		/**
          *

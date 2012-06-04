@@ -27,6 +27,7 @@ import com.android.internal.widget.WaveView;
 import com.android.internal.widget.multiwaveview.MultiWaveView;
 
 import android.app.ActivityManager;
+import android.database.Cursor;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -46,8 +47,14 @@ import android.graphics.ColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.PixelFormat;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationUtils;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
@@ -59,6 +66,7 @@ import android.provider.Settings;
 import android.widget.TextView;				
 import android.database.ContentObserver;
 import java.io.File;
+import android.net.Uri;
 import java.net.URISyntaxException;
 import java.util.List;
 
@@ -98,10 +106,22 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 	private UnlockWidgetCommonMethods mUnlockWidgetMethods2;
 	private View mUnlockWidget;
 	private View mUnlockWidget2;
+	private LockTextSMS mLockSMS;
 	
 	// to allow coloring of lockscreen texts
 	private TextView mCarrier;
 	private DigitalClock mDigitalClock;
+	
+	//custom app picker for SMS popup
+	private String mSMSApp = (Settings.System.getString(
+				mContext.getContentResolver(),
+				Settings.System.LOCKSCREEN_SMS_APP));
+	
+	//lets add fling!
+	private static final int SWIPE_MIN_DISTANCE = 120;
+    private static final int SWIPE_MAX_OFF_PATH = 250;
+    private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+    private final GestureDetector gestureDetector = new GestureDetector(new GestureListener());
 
 	
 	// lockscreen toggles
@@ -1026,6 +1046,18 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 									 this, true);
 			}
 			
+			mLockSMS = (LockTextSMS) findViewById(R.id.locksms);
+			
+			final OnTouchListener flingSMS = new OnTouchListener() {
+				@Override
+				public boolean onTouch(final View view, final MotionEvent event) {
+					gestureDetector.onTouchEvent(event);
+					return true;
+				}
+			};
+			
+			mLockSMS.setOnTouchListener(flingSMS);
+			
 			mStatusViewManager = new KeyguardStatusViewManager(this,
 							mUpdateMonitor, mLockPatternUtils, mCallback, false);
 			
@@ -1433,4 +1465,88 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
 					if (DEBUG) Log.d(TAG, "KeyguardStatusViewManager.updateColors() failed: NullPointerException");
 				}
 		}
+
+	class GestureListener extends SimpleOnGestureListener {
+		@Override  
+		public boolean onSingleTapConfirmed(MotionEvent e) {
+			if (mSMSApp == null) {
+				int newestSMS = -1;
+    			Uri uri = Uri.parse("content://sms");
+    			Cursor c = mContext.getContentResolver().query(uri, new String[] 
+															   { "_id", "thread_id", "address", "person", "date", "body", "type" }, null, null, null);
+    			if (c.getCount() > 0) {
+    				if (c.moveToFirst()){
+    					newestSMS = c.getInt(1);
+    				}
+    			}
+    			
+    			Intent i;
+    			if (newestSMS > 0) {
+        			i = new Intent(Intent.ACTION_VIEW);
+    				i.setData(Uri.parse("content://mms-sms/conversations/" + newestSMS));
+    				i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    			} else {
+    				i = new Intent(Intent.ACTION_MAIN);
+    				i.setClassName("com.android.mms", "com.android.mms.ui.ConversationList");
+        			i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    			}
+    			mContext.startActivity(i);
+				mLockSMS.setVisibility(View.GONE);
+				Settings.System.putInt(getContext().getContentResolver(), Settings.System.LOCKSCREEN_SMS_CROSS, 1);
+			} else {
+				runActivity(mSMSApp);
+			}
+			return true;  
+		}
+		
+		@Override
+		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+			try {
+				if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH)
+					return false;
+				// right to left swipe
+				if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+					Animation anim = AnimationUtils.makeOutAnimation(getContext(), false);
+					anim.setDuration(300);
+					anim.setAnimationListener(new AnimationListener() {
+						@Override
+						public void onAnimationEnd(Animation animation) {
+							mLockSMS.setVisibility(View.GONE);
+							Settings.System.putInt(getContext().getContentResolver(), Settings.System.LOCKSCREEN_SMS_CROSS, 1);
+						}
+						@Override
+						public void onAnimationStart(Animation animation) {
+							
+						}
+						@Override
+						public void onAnimationRepeat(Animation animation) {
+							
+						}
+					});
+					mLockSMS.startAnimation(anim);
+				}  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+					Animation anim = AnimationUtils.makeOutAnimation(getContext(), true);
+					anim.setDuration(300);
+					anim.setAnimationListener(new AnimationListener() {
+						@Override
+						public void onAnimationEnd(Animation animation) {
+							mLockSMS.setVisibility(View.GONE);
+							Settings.System.putInt(getContext().getContentResolver(), Settings.System.LOCKSCREEN_SMS_CROSS, 1);
+						}
+						@Override
+						public void onAnimationStart(Animation animation) {
+							
+						}
+						@Override
+						public void onAnimationRepeat(Animation animation) {
+							
+						}
+					});
+					mLockSMS.startAnimation(anim);
+				}
+			} catch (Exception e) {
+			}
+			return false;
+		}
+	}
 }

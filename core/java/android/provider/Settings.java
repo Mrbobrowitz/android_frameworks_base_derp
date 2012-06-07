@@ -1387,6 +1387,12 @@ public final class Settings {
          * Control whether to enable automatic brightness mode.
          */
         public static final String SCREEN_BRIGHTNESS_MODE = "screen_brightness_mode";
+		
+		/**
+         * Control brightness with statusbar! Sweetness lol.
+		 * @hide
+         */
+		public static final String STATUS_BAR_BRIGHTNESS_TOGGLE = "status_bar_brightness_toggle";
 
         /**
          * SCREEN_BRIGHTNESS_MODE value for manual mode.

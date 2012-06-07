@@ -40,6 +40,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.IPowerManager;
 import android.os.RemoteException;
 import android.os.Handler;
 import android.os.Message;
@@ -60,6 +61,7 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
@@ -121,6 +123,7 @@ public class PhoneStatusBar extends StatusBar {
     private static final int MSG_HIDE_INTRUDER = 1003;
     private static final int MSG_OPEN_RECENTS_PANEL = 1020;
     private static final int MSG_CLOSE_RECENTS_PANEL = 1021;
+	private static final int MSG_SAMSUNG_MAGIC = 2000;
 	
     // will likely move to a resource or other tunable param at some point
     private static final int INTRUDER_ALERT_DECAY_MS = 10000;
@@ -138,6 +141,8 @@ public class PhoneStatusBar extends StatusBar {
 	
     private float mExpandAccelPx; // classic value: 2000px/s/s
     private float mCollapseAccelPx; // classic value: 2000px/s/s (will be negated to collapse "up")
+	private float mScreenWidth;
+	private int mMinBrightness;
 	
     PhoneStatusBarPolicy mIconPolicy;
 	
@@ -234,7 +239,14 @@ public class PhoneStatusBar extends StatusBar {
     boolean mAnimatingReveal = false;
     int mViewDelta;
     int[] mAbsPos = new int[2];
+	int mLinger = 0;
     Runnable mPostCollapseCleanup = null;
+	
+	private int mIsBrightNessMode = 0;
+	private boolean mIsStatusBarBrightNess;
+	private boolean mIsAutoBrightNess;
+	private BrightNessContentObserver mBrightNessContentObs = new BrightNessContentObserver();
+	private Float mPropFactor;
 	
 	// last theme that was applied in order to detect theme change (as opposed
 	// to some other configuration change).
@@ -304,7 +316,9 @@ public class PhoneStatusBar extends StatusBar {
         loadDimens();
 		
         mIconSize = res.getDimensionPixelSize(com.android.internal.R.dimen.status_bar_icon_size);
-		
+		mScreenWidth = (float) context.getResources().getDisplayMetrics().widthPixels;
+		mMinBrightness = context.getResources().getInteger(
+					   com.android.internal.R.integer.config_screenBrightnessDim);
         ExpandedView expanded = (ExpandedView)View.inflate(context,
 														   R.layout.status_bar_expanded, null);
         if (DEBUG) {
@@ -320,7 +334,7 @@ public class PhoneStatusBar extends StatusBar {
 																 R.layout.status_bar, null);
         sb.mService = this;
         mStatusBarView = sb;
-		
+	
         try {
             boolean showNav = mWindowManager.hasNavigationBar();
             if (showNav) {
@@ -420,11 +434,99 @@ public class PhoneStatusBar extends StatusBar {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         context.registerReceiver(mBroadcastReceiver, filter);
 		
+		SettingsObserver observer = new SettingsObserver(new Handler());
+		observer.observe();
+		updateSettings();
+		
 		// restore state
 		mPowerWidget.setupWidget();
 		
+		mIsStatusBarBrightNess = Settings.System.getInt(mStatusBarView.getContext()
+														.getContentResolver(),
+														Settings.System.STATUS_BAR_BRIGHTNESS_TOGGLE, 0) == 1;
+        if (mIsStatusBarBrightNess) {
+            mIsAutoBrightNess = checkAutoBrightNess();
+            mContext.getContentResolver().registerContentObserver(
+																  Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE), false,
+																  mBrightNessContentObs);
+            updatePropFactorValue();
+        }		
+		
         return sb;
     }
+	
+	private boolean checkAutoBrightNess() {
+        return Settings.System.getInt(mContext.getContentResolver(),
+									  Settings.System.SCREEN_BRIGHTNESS_MODE,
+									  Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
+    }
+	
+    private void doBrightNess(MotionEvent e) {
+        int screenBrightness = checkMinMax(Float.valueOf((e.getRawX() * mPropFactor.floatValue()))
+										   .intValue());
+        Settings.System.putInt(mContext.getContentResolver(), "screen_brightness", screenBrightness);
+        // Log.e(TAG, "Screen brightness: " + screenBrightness);
+        try {
+            IPowerManager pw = IPowerManager.Stub.asInterface(ServiceManager.getService("power"));
+            if (pw != null) {
+                pw.setBacklightBrightness(screenBrightness);
+            }
+        } catch (RemoteException e1) {
+        }
+    }
+	
+    private int checkMinMax(int brightness) {
+        if (0x1E > brightness) // brightness < 0x1E
+            return 0x1E;
+        else if (0xFF < brightness) { // brightness > 0xFF
+            return 0xFF;
+        }
+		
+        return brightness;
+    }
+	
+    private void updatePropFactorValue() {
+        mPropFactor = Float.valueOf((float) android.os.Power.BRIGHTNESS_ON
+									/ Integer.valueOf(mDisplay.getWidth()).floatValue());
+    }
+	
+	class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
+        }
+		
+        void observe() {
+			ContentResolver resolver = mContext.getContentResolver();
+			resolver.registerContentObserver(
+				 Settings.System.getUriFor(Settings.System.STATUS_BAR_BRIGHTNESS_TOGGLE), 
+				 false, this);
+        }
+		
+		@Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
+        }
+    }
+	
+	private class BrightNessContentObserver extends ContentObserver {
+		
+        public BrightNessContentObserver() {
+            super(new Handler());
+        }
+		
+        @Override
+        public void onChange(boolean selfChange) {
+            mIsAutoBrightNess = checkAutoBrightNess();
+        }
+		
+    }
+	
+	private void updateSettings() {
+		ContentResolver cr = mContext.getContentResolver();
+		mIsStatusBarBrightNess = Settings.System.getInt(mStatusBarView.getContext()
+				.getContentResolver(),
+				Settings.System.STATUS_BAR_BRIGHTNESS_TOGGLE, 1) == 1;
+	}
 	
 	protected class NavPanelObserver extends ContentObserver {
         public NavPanelObserver(Handler handler) {
@@ -1285,6 +1387,13 @@ return null;
 						mRecentsPanel.show(false, true);
 					}
 					break;
+				case MSG_SAMSUNG_MAGIC:
+                    if (mIsStatusBarBrightNess) {
+                        mIsBrightNessMode = 1;
+                        updateExpandedViewPos(0);
+                        performCollapse();
+                    }
+                    break;
 			}
 		}
 	}
@@ -1578,56 +1687,79 @@ mHandler.sendMessageAtTime(mHandler.obtainMessage(MSG_ANIMATE), mCurAnimationTim
 stopTracking();
 }
 
-boolean interceptTouchEvent(MotionEvent event) {
-if (SPEW) {
-Slog.d(TAG, "Touch: rawY=" + event.getRawY() + " event=" + event + " mDisabled="
-+ mDisabled);
-} else if (CHATTY) {
-if (event.getAction() != MotionEvent.ACTION_MOVE) {
-Slog.d(TAG, String.format(
-"panel: %s at (%f, %f) mDisabled=0x%08x",
-MotionEvent.actionToString(event.getAction()),
-event.getRawX(), event.getRawY(), mDisabled));
-}
-}
+	boolean interceptTouchEvent(MotionEvent event) {
+		if (SPEW) {
+			Slog.d(TAG, "Touch: rawY=" + event.getRawY() + " event=" + event + " mDisabled="
+				+ mDisabled);
+		} else if (CHATTY) {
+			if (event.getAction() != MotionEvent.ACTION_MOVE) {
+				Slog.d(TAG, String.format(
+					"panel: %s at (%f, %f) mDisabled=0x%08x",
+					MotionEvent.actionToString(event.getAction()),
+					event.getRawX(), event.getRawY(), mDisabled));
+			}
+		}
 
-if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
-return false;
-}
+		if ((mDisabled & StatusBarManager.DISABLE_EXPAND) != 0) {
+			return false;
+		}
 
-final int action = event.getAction();
-final int statusBarSize = mStatusBarView.getHeight();
-final int hitSize = statusBarSize*2;
-final int y = (int)event.getRawY();
-if (action == MotionEvent.ACTION_DOWN) {
-if (!mExpanded) {
-mViewDelta = statusBarSize - y;
-} else {
-mTrackingView.getLocationOnScreen(mAbsPos);
-mViewDelta = mAbsPos[1] + mTrackingView.getHeight() - y;
-}
-if ((!mExpanded && y < hitSize) ||
-(mExpanded && y > (mDisplayMetrics.heightPixels-hitSize))) {
+		final int action = event.getAction();
+		final int statusBarSize = mStatusBarView.getHeight();
+		final int hitSize = statusBarSize*2;
+		final int y = (int)event.getRawY();
+		if (action == MotionEvent.ACTION_DOWN) {
+			mLinger = 0;
+			if (!mExpanded) {
+				mViewDelta = statusBarSize - y;
+			} else {
+				mTrackingView.getLocationOnScreen(mAbsPos);
+				mViewDelta = mAbsPos[1] + mTrackingView.getHeight() - y;
+			}
+		if ((!mExpanded && y < hitSize) ||
+				(mExpanded && y > (mDisplayMetrics.heightPixels-hitSize))) {
 
-// We drop events at the edge of the screen to make the windowshade come
-// down by accident less, especially when pushing open a device with a keyboard
-// that rotates (like g1 and droid)
-int x = (int)event.getRawX();
-final int edgeBorder = mEdgeBorder;
-if (x >= edgeBorder && x < mDisplayMetrics.widthPixels - edgeBorder) {
-prepareTracking(y, !mExpanded);// opening if we're not already fully visible
-trackMovement(event);
-}
-}
-} else if (mTracking) {
-trackMovement(event);
+			// We drop events at the edge of the screen to make the windowshade come
+			// down by accident less, especially when pushing open a device with a keyboard
+			// that rotates (like g1 and droid)
+			int x = (int)event.getRawX();
+			final int edgeBorder = mEdgeBorder;
+			if (x >= edgeBorder && x < mDisplayMetrics.widthPixels - edgeBorder) {
+				prepareTracking(y, !mExpanded);// opening if we're not 
+											   //already fully visible
+				trackMovement(event);
+
+				if (mIsStatusBarBrightNess) {
+					mIsBrightNessMode = 0;
+					if (!mIsAutoBrightNess) {
+						mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SAMSUNG_MAGIC),
+						ViewConfiguration.getGlobalActionKeyTimeout() * 2);
+					}
+				}
+			}
+		}
+	} else if (mTracking) {
+		trackMovement(event);
 final int minY = statusBarSize + mCloseView.getHeight();
 if (action == MotionEvent.ACTION_MOVE) {
 if (mAnimatingReveal && y < minY) {
-// nothing
+// samsung brightness
+if (mIsStatusBarBrightNess && mIsBrightNessMode == 1) {
+	doBrightNess(event);
+}
 } else  {
-mAnimatingReveal = false;
-updateExpandedViewPos(y + mViewDelta);
+	 // remove brightness events from being posted, change mode
+	if (mIsStatusBarBrightNess) {
+		if (!mIsAutoBrightNess && mHandler.hasMessages(MSG_SAMSUNG_MAGIC)) {
+			mHandler.removeMessages(MSG_SAMSUNG_MAGIC);
+		}
+
+		if (mIsBrightNessMode == 1) {
+			mIsBrightNessMode = 2;
+		}
+	}
+	mAnimatingReveal = false;
+	updateExpandedViewPos(y + mViewDelta);
 }
 } else if (action == MotionEvent.ACTION_UP
 || action == MotionEvent.ACTION_CANCEL) {
@@ -1641,7 +1773,8 @@ if (xVel < 0) {
 xVel = -xVel;
 }
 if (xVel > mFlingGestureMaxXVelocityPx) {
-xVel = mFlingGestureMaxXVelocityPx; // limit how much we care about the x axis
+xVel = mFlingGestureMaxXVelocityPx; // limit how much we 
+									//care about the x axis
 }
 
 float vel = (float)Math.hypot(yVel, xVel);
@@ -1658,6 +1791,9 @@ vel));
 }
 
 performFling(y + mViewDelta, vel, false);
+if (mIsStatusBarBrightNess && mHandler.hasMessages(MSG_SAMSUNG_MAGIC)) {
+mHandler.removeMessages(MSG_SAMSUNG_MAGIC);
+}
 }
 
 }

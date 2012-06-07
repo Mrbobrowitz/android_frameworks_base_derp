@@ -372,7 +372,12 @@ implements ServiceConnection, Handler.Callback {
             resolver.registerContentObserver(Settings.Secure.getUriFor(
 						   Settings.Secure.SELECTED_INPUT_METHOD_SUBTYPE), false, this);
 			resolver.registerContentObserver(Settings.Secure.getUriFor(
-						   Settings.System.SHOW_STATUSBAR_IME_SWITCHER), false, this);
+				   Settings.System.SHOW_STATUSBAR_IME_SWITCHER), 
+				   false, new ContentObserver(mHandler) {
+					   public void onChange(boolean selfChange) {
+							updateFromSettingsLocked();
+						}
+					});
 		}
 		
         @Override public void onChange(boolean selfChange) {
@@ -637,8 +642,6 @@ implements ServiceConnection, Handler.Callback {
                 mStatusBar = statusBar;
 				statusBar.setIconVisibility("ime", false);
                 updateImeWindowStatusLocked();
-				// mShowOngoingImeSwitcherForPhones = mRes.getBoolean(
-							   // com.android.internal.R.bool.show_ongoing_ime_switcher);
                 try {
                     startInputInnerLocked();
                 } catch (RuntimeException e) {

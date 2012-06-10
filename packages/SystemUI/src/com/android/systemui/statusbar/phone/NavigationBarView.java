@@ -16,6 +16,12 @@
 
 package com.android.systemui.statusbar.phone;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.ContentResolver;
@@ -39,10 +45,6 @@ import android.view.ViewGroup;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-
-import java.io.FileDescriptor;
-import java.io.PrintWriter;
-import java.lang.StringBuilder;
 
 import com.android.internal.statusbar.IStatusBarService;
 
@@ -100,7 +102,11 @@ public class NavigationBarView extends LinearLayout {
             saved = "back|home|recent|search0";
         }
         boolean isPortrait = mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
-        int[] ids = {R.id.one,R.id.two,R.id.three,R.id.four};
+        boolean isLandscape = mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+		List<Integer> ids = Arrays.asList(R.id.one,R.id.two,R.id.three,R.id.four);
+        if (!isPortrait) {
+            Collections.reverse(ids);
+        }
         
 		SettingsObserver settingsObserver = new SettingsObserver(new Handler());
 		settingsObserver.observe();
@@ -114,7 +120,7 @@ public class NavigationBarView extends LinearLayout {
             }
         }
         for (String buttons : saved.split("\\|") ){
-            KeyButtonView cView = (KeyButtonView) mCurrentView.findViewById(ids[cc]);
+            KeyButtonView cView = (KeyButtonView) mCurrentView.findViewById(ids.get(cc));
             if (buttons.equals("back")){
                 cView.setTag("back");
                 cView.setContentDescription(mContext.getResources().getString(R.string.accessibility_back));

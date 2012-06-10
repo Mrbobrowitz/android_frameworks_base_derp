@@ -100,7 +100,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private boolean mEnableScreenshot = true;
     private boolean mEnableAirplaneMode = true;
     private boolean mEnableSilentToggle = true;
-	private boolean mEnableNavBarHideToggle = true;
+	private boolean mEnableNavBarHideToggle = false;
 
     /**
      * @param context everything needs a context :(
@@ -220,11 +220,11 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         };
 		
 		mNavBarHideToggle = new ToggleAction(
-											 R.drawable.ic_lock_navbar_hide,
-											 R.drawable.ic_lock_navbar_hide,
-											 R.string.global_actions_toggle_navbar_hide,
-											 R.string.global_actions_navbar_hide_on,
-											 R.string.global_actions_navbar_hide_off) {
+				 R.drawable.ic_lock_navbar_hide,
+				 R.drawable.ic_lock_navbar_hide,
+				 R.string.global_actions_toggle_navbar_hide,
+				 R.string.global_actions_navbar_hide_on,
+				 R.string.global_actions_navbar_hide_off) {
 			
             void onToggle(boolean on) {
                 Settings.System.putInt(mContext.getContentResolver(),
@@ -304,10 +304,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 		
 		// Next NavBar Hide
         if(mEnableNavBarHideToggle) {
-            Slog.e(TAG, "Adding NavBarhHideToggle");
             mItems.add(mNavBarHideToggle); 
-        } else {
-            Slog.e(TAG, "not adding NavBarHideToggle");
         }		
 
         // last: silent mode

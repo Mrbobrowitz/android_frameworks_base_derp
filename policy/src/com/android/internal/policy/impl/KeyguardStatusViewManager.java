@@ -56,15 +56,6 @@ class KeyguardStatusViewManager implements OnClickListener {
 	public static final int BATTERY_ICON = 0; //insert a R.drawable icon if you want it to show up
     private static final long INSTRUCTION_RESET_DELAY = 2000; // time until instruction text resets
 	
-	public static final String EXTRA_CITY = "city";
-    public static final String EXTRA_FORECAST_DATE = "forecast_date";
-    public static final String EXTRA_CONDITION = "condition";
-    public static final String EXTRA_TEMP = "temp";
-    public static final String EXTRA_HUMIDITY = "humidity";
-    public static final String EXTRA_WIND = "wind";
-    public static final String EXTRA_LOW = "todays_low";
-    public static final String EXTRA_HIGH = "todays_high";
-
     private static final int INSTRUCTION_TEXT = 10;
     private static final int CARRIER_TEXT = 11;
     private static final int CARRIER_HELP_TEXT = 12;

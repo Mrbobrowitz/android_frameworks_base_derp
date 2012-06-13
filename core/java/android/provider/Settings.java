@@ -2174,6 +2174,7 @@ public final class Settings {
 		public static final String STATUSBAR_SIGNAL_TEXT = "statusbar_signal_text";
 		public static final String STATUSBAR_SIGNAL_TEXT_COLOR = "statusbar_signal_text_color";
 		
+		public static final String STATUSBAR_WEATHER_COLOR = "statusbar_weather_color";
 		/**
          * [0] = how long to animate glow off
          * [1] = how long to animate glow on

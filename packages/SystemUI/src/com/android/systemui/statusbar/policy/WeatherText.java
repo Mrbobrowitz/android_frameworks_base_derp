@@ -16,6 +16,7 @@ import android.widget.TextView;
 public class WeatherText extends TextView {
 	
     private boolean mAttached;
+	private Handler mHandler;
 	
     public static final String EXTRA_CITY = "city";
     public static final String EXTRA_ZIP = "zip";
@@ -30,17 +31,27 @@ public class WeatherText extends TextView {
 	
     BroadcastReceiver weatherReceiver = new BroadcastReceiver() {
 	@Override
-	public void onReceive(Context context, Intent intent) {
-	setText(intent.getCharSequenceExtra("temp_f")+"°F " + " (" +intent.getCharSequenceExtra("temp_c") + "°C), "
-			+ intent.getCharSequenceExtra(EXTRA_CONDITION));
-}
-};
+		public void onReceive(Context context, Intent intent) {
+		setText(intent.getCharSequenceExtra("temp_f")+"°F " + " (" +intent.getCharSequenceExtra("temp_c") + "°C), "
+				+ intent.getCharSequenceExtra(EXTRA_CONDITION));
+		}
+	};
 
-public WeatherText(Context context, AttributeSet attrs) {
-super(context, attrs);
-setText("");
+	public WeatherText(Context context, AttributeSet attrs) {
+		super(context, attrs);
+			setText("");
 
-}
+	}
+
+	public WeatherText(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+		mHandler = new Handler();
+		SettingsObserver settingsObserver = new SettingsObserver(mHandler);
+		settingsObserver.observe();
+
+		updateSettings();
+	}
+
 
 @Override
 protected void onAttachedToWindow() {
@@ -63,31 +74,37 @@ mAttached = false;
 }
 }
 
-class SettingsObserver extends ContentObserver {
-	SettingsObserver(Handler handler) {
-		super(handler);
-		observe();
+	class SettingsObserver extends ContentObserver {
+		SettingsObserver(Handler handler) {
+			super(handler);
+			observe();
+		}
+		
+		void observe() {
+			ContentResolver resolver = mContext.getContentResolver();
+			resolver.registerContentObserver(
+											 Settings.System.getUriFor(Settings.System.USE_WEATHER), false,
+											 this);
+			resolver.registerContentObserver(
+											 Settings.System.getUriFor(Settings.System.STATUSBAR_WEATHER_COLOR), false, this);
+		}
+		
+		@Override
+		public void onChange(boolean selfChange) {
+			updateSettings();
+		}
 	}
-	
-	void observe() {
-		ContentResolver resolver = mContext.getContentResolver();
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.USE_WEATHER), false,
-										 this);
-		updateSettings();
-	}
-	
-	@Override
-	public void onChange(boolean selfChange) {
-		updateSettings();
-	}
-}
 
-protected void updateSettings() {
-ContentResolver resolver = mContext.getContentResolver();
+	private void updateSettings() {
+	ContentResolver resolver = mContext.getContentResolver();
+	
+	int mColorChanger = Settings.System.getInt(resolver,
+	Settings.System.STATUSBAR_WEATHER_COLOR, 0xFF33B5E5);
 
-boolean useWeather = Settings.System.getInt(resolver, Settings.System.USE_WEATHER, 0) == 1;
-        setVisibility(useWeather ? View.VISIBLE : View.GONE);
-    }
+	setTextColor(mColorChanger);
+
+	boolean useWeather = Settings.System.getInt(resolver, Settings.System.USE_WEATHER, 0) == 1;
+			setVisibility(useWeather ? View.VISIBLE : View.GONE);
+	}
 
 }

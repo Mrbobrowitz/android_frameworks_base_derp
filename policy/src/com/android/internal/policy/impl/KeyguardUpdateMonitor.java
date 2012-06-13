@@ -76,6 +76,7 @@ public class KeyguardUpdateMonitor {
     private boolean mDeviceProvisioned;
 
     private BatteryStatus mBatteryStatus;
+	
 
     private CharSequence mTelephonyPlmn;
     private CharSequence mTelephonySpn;
@@ -355,7 +356,7 @@ public class KeyguardUpdateMonitor {
             }
         }
     }
-
+	
     /**
      * Handle {@link #MSG_CARRIER_INFO_UPDATE}
      */
@@ -539,7 +540,7 @@ public class KeyguardUpdateMonitor {
             // Notify listener of the current state
             callback.onRefreshBatteryInfo(shouldShowBatteryInfo(),isPluggedIn(mBatteryStatus),
                     mBatteryStatus.level);
-            callback.onTimeChanged();
+			callback.onTimeChanged();
             callback.onRingerModeChanged(mRingMode);
             callback.onPhoneStateChanged(mPhoneState);
             callback.onRefreshCarrierInfo(mTelephonyPlmn, mTelephonySpn);

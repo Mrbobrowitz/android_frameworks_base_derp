@@ -2191,8 +2191,6 @@ public final class Settings {
          */
         public static final String NAVIGATION_BAR_BUTTON_ALPHA = "navigation_bar_button_alpha";
 		
-		
-		
 		/**
          * Setting to enable volume options.
          * 

@@ -39,6 +39,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
+import android.content.Intent;
 
 /***
  * Manages a number of views inside of LockScreen layouts. See below for a list of widgets
@@ -54,6 +55,15 @@ class KeyguardStatusViewManager implements OnClickListener {
     public static final int BATTERY_LOW_ICON = 0; //R.drawable.ic_lock_idle_low_battery;
 	public static final int BATTERY_ICON = 0; //insert a R.drawable icon if you want it to show up
     private static final long INSTRUCTION_RESET_DELAY = 2000; // time until instruction text resets
+	
+	public static final String EXTRA_CITY = "city";
+    public static final String EXTRA_FORECAST_DATE = "forecast_date";
+    public static final String EXTRA_CONDITION = "condition";
+    public static final String EXTRA_TEMP = "temp";
+    public static final String EXTRA_HUMIDITY = "humidity";
+    public static final String EXTRA_WIND = "wind";
+    public static final String EXTRA_LOW = "todays_low";
+    public static final String EXTRA_HIGH = "todays_high";
 
     private static final int INSTRUCTION_TEXT = 10;
     private static final int CARRIER_TEXT = 11;
@@ -174,8 +184,9 @@ class KeyguardStatusViewManager implements OnClickListener {
      */
     public KeyguardStatusViewManager(View view, KeyguardUpdateMonitor updateMonitor,
                 LockPatternUtils lockPatternUtils, KeyguardScreenCallback callback,
-                boolean emergencyButtonEnabledInScreen) {
-        if (DEBUG) Log.v(TAG, "KeyguardStatusViewManager()");
+									 boolean emergencyButtonEnabledInScreen) {
+		if (DEBUG)
+			Log.v(TAG, "KeyguardStatusViewManager()");
         mContainer = view;
         mDateFormatString = getContext().getString(R.string.abbrev_wday_month_day_no_year);
         mLockPatternUtils = lockPatternUtils;
@@ -360,6 +371,7 @@ class KeyguardStatusViewManager implements OnClickListener {
             mOwnerInfoView.setVisibility(TextUtils.isEmpty(mOwnerInfoText) ? View.GONE:View.VISIBLE);
         }
     }
+	
 
     private void updateStatus1() {
         if (mStatus1View != null) {

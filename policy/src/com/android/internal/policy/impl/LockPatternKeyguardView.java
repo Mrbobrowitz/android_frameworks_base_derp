@@ -817,8 +817,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase implements Handler
     // same interface
     @Override
     public void onRefreshBatteryInfo(boolean showBatteryInfo, boolean pluggedIn, int batteryLevel)
-    {
-    }
+    {}
 
     @Override
     public void onTimeChanged() {

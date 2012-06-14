@@ -131,6 +131,8 @@
             android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin"
         />
         
+        
+        
         <com.android.internal.policy.impl.LockTextSMS
             android:id="@+id/locksms"             
             android:layout_width="wrap_content"
@@ -201,7 +203,7 @@
             android:textSize="@dimen/keyguard_lockscreen_status_line_font_size"
             android:textColor="?android:attr/textColorSecondary"
             />
-
+            
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"

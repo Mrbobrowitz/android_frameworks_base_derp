@@ -77,7 +77,6 @@ public class KeyguardUpdateMonitor {
 
     private BatteryStatus mBatteryStatus;
 	
-
     private CharSequence mTelephonyPlmn;
     private CharSequence mTelephonySpn;
 

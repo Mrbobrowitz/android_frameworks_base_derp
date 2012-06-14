@@ -41,6 +41,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.content.Intent;
 
+
 /***
  * Manages a number of views inside of LockScreen layouts. See below for a list of widgets
  *
@@ -186,7 +187,7 @@ class KeyguardStatusViewManager implements OnClickListener {
 
         mCarrierView = (TextView) findViewById(R.id.carrier);
         mDateView = (TextView) findViewById(R.id.date);
-        mStatus1View = (TextView) findViewById(R.id.status1);
+		mStatus1View = (TextView) findViewById(R.id.status1);
         mAlarmStatusView = (TextView) findViewById(R.id.alarm_status);
         mOwnerInfoView = (TextView) findViewById(R.id.propertyOf);
         mTransportView = (TransportControlView) findViewById(R.id.transport);
@@ -363,7 +364,6 @@ class KeyguardStatusViewManager implements OnClickListener {
         }
     }
 	
-
     private void updateStatus1() {
         if (mStatus1View != null) {
             MutableInt icon = new MutableInt(0);
@@ -697,7 +697,7 @@ class KeyguardStatusViewManager implements OnClickListener {
             mBatteryLevel = batteryLevel;
             final MutableInt tmpIcon = new MutableInt(0);
             update(BATTERY_INFO, getAltTextMessage(tmpIcon));
-        }
+		}
 
         public void onTimeChanged() {
             refreshDate();

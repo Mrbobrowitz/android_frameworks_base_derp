@@ -29,10 +29,12 @@ public class WeatherText extends TextView {
     public static final String EXTRA_LOW = "todays_low";
     public static final String EXTRA_HIGH = "todays_high";
 	
+	boolean showLocation = false;
+	
     BroadcastReceiver weatherReceiver = new BroadcastReceiver() {
 	@Override
 		public void onReceive(Context context, Intent intent) {
-		setText(intent.getCharSequenceExtra("temp_f")+"°F " + " (" +intent.getCharSequenceExtra("temp_c") + "°C), "
+		setText(intent.getCharSequenceExtra("temp")+ ", "
 				+ intent.getCharSequenceExtra(EXTRA_CONDITION));
 		}
 	};
@@ -104,6 +106,7 @@ mAttached = false;
 	setTextColor(mColorChanger);
 
 	boolean useWeather = Settings.System.getInt(resolver, Settings.System.USE_WEATHER, 0) == 1;
+	showLocation = Settings.System.getInt(resolver, Settings.System.WEATHER_SHOW_LOCATION, 0) == 1;
 			setVisibility(useWeather ? View.VISIBLE : View.GONE);
 	}
 

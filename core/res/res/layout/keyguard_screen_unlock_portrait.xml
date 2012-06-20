@@ -25,6 +25,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/root"
     android:gravity="center_horizontal">
 
     <com.android.internal.widget.DigitalClock android:id="@+id/time"
@@ -90,9 +91,8 @@
         android:orientation="horizontal"
         android:layout_gravity="right"
         android:layout_marginRight="@dimen/keyguard_lockscreen_status_line_font_right_margin">
-        
-        
-    <TextView
+
+        <TextView
             android:id="@+id/zzstatus2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -116,7 +116,6 @@
         />
 
     </LinearLayout>
-
 
     <Space android:layout_gravity="fill" />
 
@@ -177,7 +176,7 @@
 
     </LinearLayout>
 
-   <!-- Music transport control -->
+    <!-- Music transport control -->
     <include android:id="@+id/transport"
         layout="@layout/keyguard_transport_control"
         android:layout_row="0"

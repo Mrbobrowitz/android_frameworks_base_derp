@@ -2249,7 +2249,37 @@ public final class Settings {
          * @hide
          */
         public static final String USE_WEATHER = "use_weather";
+		
+		/**
+         * @hide
+         */
+		public static final String WEATHER_SHOW_TIMESTAMP = "weather_show_timestamp";
+		
+		/**
+         * @hide
+         */
+		public static final String WEATHER_USE_CUSTOM_LOCATION = "weather_use_custom_location";
+		
+		/**
+         * @hide
+         */
+		public static final String WEATHER_CUSTOM_LOCATION = "weather_custom_location";
+		
+		/**
+         * @hide
+         */
+		public static final String WEATHER_UPDATE_INTERVAL = "weather_update_interval";
+		
+		/**
+         * @hide
+         */
+		public static final String WEATHER_USE_METRIC = "weather_use_metric";
         
+		/**
+         * @hide
+         */
+		public static final String WEATHER_INVERT_LOWHIGH = "weather_invert_lowhigh";
+		
         /**
          * @hide
          */
@@ -2895,30 +2925,20 @@ public final class Settings {
 		public static final String STATUSBAR_NOTIFICATION_ALPHA = "statusbar_notification_alpha";
 		
 		/**
+		 * Lockscreen Wallpaper...Get Some!!!
+		 *@hide
+		 */
+		public static final String LOCKSCREEN_BACKGROUND = "lockscreen_background";
+		
+		/**
 		 * Colorfilter for the statusbar notifications.
 		 * @hide
 		 */
 		public static final String STATUSBAR_NOTIFICATION_COLOR = "statusbar_notification_color";
 		
-		/**
-		 * SMS Popup on lockscreen
-		 * @hide
-		 */
-		public static final String LOCKSCREEN_SHOW_TEXTS = "lockscreen_show_texts"; 
-		
-		/**
-		 * When using SMS popups needed a crossover to hide/show current popups with
-		 * the lock screen rebuilding each time
-		 *  1 = has been viewed
-		 *  0 = will show popup
-		 * @hide
-		 */
-		public static final String LOCKSCREEN_SMS_CROSS = "lockscreen_sms_cross";
-		
-		public static final String LOCKSCREEN_SMS_APP = "lockscreen_sms_app";
-		
-		public static final String LOCKSCREEN_SMS_COLOR = "lockscreen_sms_color"; 
 		public static final String LOCKSCREEN_SMS_MUSIC = "lockscreen_sms_music";
+		
+		public static final String LOCKSCREEN_SMS_CALL_WIDGET = "lockscreen_sms_call_widget";
 		
 		/**
          *
